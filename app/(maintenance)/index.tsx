@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image } from 'react-native';
 import { maintenanceAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -33,8 +33,17 @@ export default function MaintenanceDashboard() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>สวัสดี, {user?.first_name} 🔧</Text>
-        <Text style={styles.subtitle}>ช่างซ่อมบำรุง</Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.greeting}>สวัสดีคุณ, {user?.first_name}</Text>
+            <Text style={styles.subtitle}>เจ้าหน้าที่ซ่อมบำรุง</Text>
+          </View>
+          <Image
+            source={require('../../assets/images/bru-logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
+        </View>
       </View>
       <View style={styles.statsGrid}>
         <StatCard label="รอดำเนินการ" count={pending} color="#F59E0B" />
@@ -42,7 +51,7 @@ export default function MaintenanceDashboard() {
         <StatCard label="เสร็จสิ้น" count={completed} color="#10B981" />
       </View>
       <View style={styles.notice}>
-        <Text style={styles.noticeTitle}>🔔 งานที่รออยู่ {pending} รายการ</Text>
+        <Text style={styles.noticeTitle}>งานที่รออยู่ {pending} รายการ</Text>
         <Text style={styles.noticeText}>ไปที่ "งานทั้งหมด" เพื่อดูรายละเอียดและอัปเดตสถานะ</Text>
       </View>
     </ScrollView>
@@ -60,7 +69,9 @@ function StatCard({ label, count, color }: { label: string; count: number; color
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F3F4F6' },
-  header: { backgroundColor: '#F59E0B', padding: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, marginBottom: 16 },
+  header: { backgroundColor: '#80639A', padding: 24, marginBottom: 16 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerLogo: { width: 72, height: 72 },
   greeting: { color: '#fff', fontSize: 20, fontWeight: '800' },
   subtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 },
   statsGrid: { flexDirection: 'row', gap: 10, paddingHorizontal: 16 },

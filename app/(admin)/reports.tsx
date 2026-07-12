@@ -21,11 +21,26 @@ export default function AdminReports() {
           maintenanceAPI.getAll(),
           dishwareAPI.getAll(),
         ]);
-        const stalls = stallsRes.data.data || [];
+        const rawStalls = stallsRes.data.data || [];
+        
+        // De-duplicate stalks by slot_number (same logic as stalls.tsx)
+        const map = new Map<string, any>();
+        for (const s of rawStalls) {
+          const key = s.slot_number;
+          const existing = map.get(key);
+          const hasActive = (x: any) => x.rental_contracts?.some((c: any) => c.status === 'ACTIVE');
+          if (!existing || (!hasActive(existing) && hasActive(s))) {
+            map.set(key, s);
+          }
+        }
+        const stalls = Array.from(map.values());
+        
         const bills = billsRes.data.data || [];
         const repairs = repairsRes.data.data || [];
         const dishware = dishwareRes.data.data || [];
-        const occ = stalls.filter((s: any) => s.status === 'OCCUPIED').length;
+        
+        const occ = stalls.filter((s: any) => s.rental_contracts?.some((c: any) => c.status === 'ACTIVE')).length;
+        
         setData({
           totalStalls: stalls.length,
           occupied: occ,
@@ -44,11 +59,30 @@ export default function AdminReports() {
 
   if (loading) return <LoadingSpinner />;
 
+  const vacant = data.totalStalls - data.occupied;
+
   return (
     <ScrollView style={styles.container}>
-      <Section title="🏪 สถานะล็อก">
+      <Section title="🏪 สถานะล็อก (Occupancy)">
+        
+        {/* Visual Chart */}
+        <View style={styles.chartContainer}>
+          <View style={styles.chartBarBg}>
+            <View style={[styles.chartBarFill, { width: `${data.occupancyRate}%` }]} />
+          </View>
+          <View style={styles.chartLegend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#FECACA' }]} />
+              <Text style={styles.legendText}>มีผู้เช่า ({data.occupied})</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#BBF7D0' }]} />
+              <Text style={styles.legendText}>ว่าง ({vacant})</Text>
+            </View>
+          </View>
+        </View>
+
         <StatRow label="ล็อกทั้งหมด" value={data.totalStalls} />
-        <StatRow label="มีผู้เช่า" value={data.occupied} />
         <StatRow label="อัตราการเช่า" value={`${data.occupancyRate}%`} highlight />
       </Section>
       <Section title="💰 บิลและการชำระเงิน">
@@ -97,4 +131,13 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
   highlight: { color: '#7C3AED' },
   danger: { color: '#EF4444' },
+
+  /* Chart Styles */
+  chartContainer: { marginBottom: 16, backgroundColor: '#F9FAFB', padding: 12, borderRadius: 12 },
+  chartBarBg: { height: 24, backgroundColor: '#BBF7D0', borderRadius: 12, overflow: 'hidden', flexDirection: 'row' },
+  chartBarFill: { height: '100%', backgroundColor: '#FECACA' },
+  chartLegend: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 12, height: 12, borderRadius: 6 },
+  legendText: { fontSize: 13, color: '#4B5563', fontWeight: '500' },
 });

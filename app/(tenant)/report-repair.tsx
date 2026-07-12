@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { maintenanceAPI } from '../../services/api';
-import StatusBadge from '../../components/ui/StatusBadge';
+import { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import StatusBadge from '../../components/ui/StatusBadge';
+import { maintenanceAPI } from '../../services/api';
 
 const CATEGORIES = ['ระบบไฟฟ้า', 'ระบบประปา', 'โครงสร้าง', 'อุปกรณ์', 'อื่นๆ'];
 
@@ -11,7 +11,7 @@ export default function ReportRepair() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [myRequests, setMyRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function ReportRepair() {
       allowsMultipleSelection: true,
       quality: 0.7,
     });
-    if (!result.canceled) setImages(result.assets.map((a) => a.uri));
+    if (!result.canceled) setImages(result.assets);
   };
 
   const handleSubmit = async () => {
@@ -43,8 +43,26 @@ export default function ReportRepair() {
       formData.append('title', title);
       formData.append('description', description);
       formData.append('category', category);
-      images.forEach((uri, i) => {
-        formData.append('images', { uri, type: 'image/jpeg', name: `repair_${i}.jpg` } as any);
+      images.forEach((asset, i) => {
+        let fileName = asset.fileName;
+        let mimeType = asset.mimeType;
+        
+        if (!fileName) {
+          const ext = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
+          fileName = `repair_${i}.${ext}`;
+        }
+        if (!mimeType) {
+          const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+          if (ext === 'png') mimeType = 'image/png';
+          else if (ext === 'heic' || ext === 'heif') mimeType = 'image/heic';
+          else mimeType = 'image/jpeg';
+        }
+
+        formData.append('images', { 
+          uri: asset.uri, 
+          type: mimeType, 
+          name: fileName 
+        } as any);
       });
       await maintenanceAPI.create(formData);
       Alert.alert('สำเร็จ', 'ส่งรายการแจ้งซ่อมเรียบร้อยแล้ว');

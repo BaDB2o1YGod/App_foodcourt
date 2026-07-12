@@ -1,10 +1,30 @@
+import { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { TouchableOpacity, Alert } from 'react-native';
+import { billsAPI } from '../../services/api';
 
 export default function TenantLayout() {
   const { logout } = useAuthStore();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await billsAPI.getAll().catch(() => null);
+        const allBills = res?.data?.data || [];
+        const pending = allBills.filter((b: any) => {
+          const isPendingStatus = b.status === 'PENDING' || b.status === 'OVERDUE';
+          const hasUnverifiedPayment = b.payments?.some((p: any) => !p.verified_at);
+          return isPendingStatus && !hasUnverifiedPayment;
+        }).length;
+        setPendingCount(pending);
+      } catch (e) {
+        console.warn(e);
+      }
+    })();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert('ออกจากระบบ', 'ต้องการออกจากระบบหรือไม่?', [
@@ -16,11 +36,11 @@ export default function TenantLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#7C3AED',
+        tabBarActiveTintColor: '#80639A',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: { backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#F3F4F6', height: 60, paddingBottom: 8 },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        headerStyle: { backgroundColor: '#7C3AED' },
+        headerStyle: { backgroundColor: '#80639A' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '700' },
         headerRight: () => (
@@ -35,7 +55,7 @@ export default function TenantLayout() {
         options={{
           title: 'หน้าหลัก',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
-          headerTitle: '🍽 BRU ศูนย์อาหาร',
+          headerTitle: 'ศูนย์อาหารมหาวิทยาลัยราชภัฏบุรีรัมย์',
         }}
       />
       <Tabs.Screen
@@ -44,6 +64,8 @@ export default function TenantLayout() {
           title: 'ค่าใช้จ่าย',
           tabBarIcon: ({ color, size }) => <Ionicons name="receipt" size={size} color={color} />,
           headerTitle: 'ค่าใช้จ่าย',
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: '#EF4444', fontSize: 11, fontWeight: '700', minWidth: 20, height: 20, lineHeight: 20, borderRadius: 10 },
         }}
       />
       <Tabs.Screen

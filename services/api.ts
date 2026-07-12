@@ -1,7 +1,19 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
-const BASE_URL = 'http://192.168.1.126:5000/api';
+// Auto-detect the dev machine's IP from Expo's hostUri (works with any WiFi)
+// Falls back to localhost for production builds
+const getBaseUrl = () => {
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(':')[0]; // strip the Expo port, keep only IP
+    return `http://${host}:5000/api`;
+  }
+  return 'http://localhost:5000/api'; // fallback
+};
+
+const BASE_URL = getBaseUrl();
 
 const api = axios.create({
   baseURL: BASE_URL,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Image } from 'react-native';
 import { stallsAPI, billsAPI, maintenanceAPI, usersAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -47,26 +47,35 @@ export default function ExecutiveDashboard() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.banner}>
-        <Text style={styles.bannerGreet}>สวัสดี, {user?.first_name} 📊</Text>
-        <Text style={styles.bannerSub}>บทบาท: ผู้บริหาร</Text>
+        <View style={styles.bannerRow}>
+          <View>
+            <Text style={styles.bannerGreet}>สวัสดีคุณ, {user?.first_name}</Text>
+            <Text style={styles.bannerSub}>บทบาท: ผู้บริหาร</Text>
+          </View>
+          <Image
+            source={require('../../assets/images/bru-logo.png')}
+            style={styles.bannerLogo}
+            resizeMode="contain"
+          />
+        </View>
       </View>
 
-      <Section title="🏪 สถานะล็อก">
+      <Section title="สถานะล็อก">
         <Row label="ล็อกทั้งหมด" value={stats.totalStalls} />
         <Row label="มีผู้เช่า" value={stats.occupied} />
         <Row label="ว่าง" value={stats.vacant} />
         <Row label="อัตราการเช่า" value={`${stats.occupancyRate}%`} highlight />
       </Section>
 
-      <Section title="👥 ผู้เช่า">
+      <Section title="ผู้เช่า">
         <Row label="จำนวนผู้เช่า" value={stats.totalTenants} />
       </Section>
 
-      <Section title="💰 การเงิน">
+      <Section title="การเงิน">
         <Row label="บิลรอชำระ" value={stats.pendingBills} danger={stats.pendingBills > 0} />
       </Section>
 
-      <Section title="🔧 งานซ่อม">
+      <Section title="งานซ่อม">
         <Row label="รอดำเนินการ" value={stats.pendingRepairs} danger={stats.pendingRepairs > 0} />
         <Row label="เสร็จสิ้น" value={stats.completedRepairs} />
       </Section>
@@ -95,6 +104,8 @@ function Row({ label, value, highlight, danger }: { label: string; value: any; h
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F3F4F6' },
   banner: { backgroundColor: '#059669', padding: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 24, marginBottom: 16 },
+  bannerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bannerLogo: { width: 72, height: 72 },
   bannerGreet: { color: '#fff', fontSize: 20, fontWeight: '800' },
   bannerSub: { color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 2 },
   card: {

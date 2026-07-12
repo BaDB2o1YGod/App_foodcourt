@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
@@ -57,11 +58,12 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoIcon}>🍽</Text>
-          </View>
+          <Image
+            source={require('../../assets/images/bru-logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>BRU ศูนย์อาหาร</Text>
-          <Text style={styles.subtitle}>ระบบจัดการร้านค้า</Text>
         </View>
 
         {/* Card */}
@@ -111,7 +113,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footer}>Pro-66 Food Court Management System v1.0</Text>
+        <Text style={styles.footer}></Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -121,11 +123,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#6B21A8' },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
   header: { alignItems: 'center', marginBottom: 32 },
-  logoBox: {
-    width: 80, height: 80, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 16,
+  logoImage: {
+    width: 100, height: 100, marginBottom: 16,
   },
-  logoIcon: { fontSize: 36 },
   title: { fontSize: 28, fontWeight: '800', color: '#fff', marginBottom: 4 },
   subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.75)' },
   card: {

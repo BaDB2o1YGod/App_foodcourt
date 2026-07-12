@@ -13,11 +13,11 @@ export default function MaintenanceLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#F59E0B',
+        tabBarActiveTintColor: '#80639A',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: { backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#F3F4F6', height: 60, paddingBottom: 8 },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        headerStyle: { backgroundColor: '#F59E0B' },
+        headerStyle: { backgroundColor: '#80639A' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '700' },
         headerRight: () => (
@@ -27,7 +27,7 @@ export default function MaintenanceLayout() {
         ),
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'หน้าหลัก', tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />, headerTitle: '🔧 ช่างซ่อม' }} />
+      <Tabs.Screen name="index" options={{ title: 'หน้าหลัก', tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />, headerTitle: 'เจ้าหน้าที่ซ่อมบำรุง' }} />
       <Tabs.Screen name="jobs" options={{ title: 'งานทั้งหมด', tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} />, headerTitle: 'รายการงาน' }} />
       <Tabs.Screen name="job-detail" options={{ href: null, headerTitle: 'รายละเอียดงาน' }} />
     </Tabs>

@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { stallsAPI } from '../../services/api';
-import StatusBadge from '../../components/ui/StatusBadge';
+import { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { stallsAPI } from '../../services/api';
 
 export default function StallStatus() {
   const { foodCourt } = useLocalSearchParams();
@@ -11,7 +10,7 @@ export default function StallStatus() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('ALL');
 
-  const FILTERS = ['ALL', 'VACANT', 'OCCUPIED', 'MAINTENANCE'];
+  const FILTERS = ['ALL', 'VACANT', 'UNAVAILABLE'];
 
   useEffect(() => {
     (async () => {
@@ -26,10 +25,12 @@ export default function StallStatus() {
 
   if (loading) return <LoadingSpinner />;
 
-  const filtered = filter === 'ALL' ? stalls : stalls.filter((s) => s.status === filter);
+  const filtered = filter === 'ALL'
+    ? stalls
+    : stalls.filter((s) => filter === 'VACANT' ? s.status === 'VACANT' : s.status !== 'VACANT');
 
   const STATUS_COLOR: Record<string, string> = {
-    VACANT: '#D1FAE5', OCCUPIED: '#DBEAFE', MAINTENANCE: '#FEF3C7',
+    VACANT: '#D1FAE5', UNAVAILABLE: '#fedbdbff',
   };
 
   return (
@@ -40,7 +41,7 @@ export default function StallStatus() {
         {FILTERS.map((f) => (
           <TouchableOpacity key={f} style={[styles.filterBtn, filter === f && styles.filterActive]} onPress={() => setFilter(f)}>
             <Text style={[styles.filterText, filter === f && styles.filterActiveText]}>
-              {f === 'ALL' ? 'ทั้งหมด' : f === 'VACANT' ? 'ว่าง' : f === 'OCCUPIED' ? 'มีผู้เช่า' : 'ซ่อม'}
+              {f === 'ALL' ? 'ทั้งหมด' : f === 'VACANT' ? 'ว่าง' : 'ไม่ว่าง'}
             </Text>
           </TouchableOpacity>
         ))}
@@ -48,8 +49,7 @@ export default function StallStatus() {
       {/* Summary */}
       <View style={styles.summaryRow}>
         <SummaryCard label="ว่าง" count={stalls.filter((s) => s.status === 'VACANT').length} color="#10B981" />
-        <SummaryCard label="มีผู้เช่า" count={stalls.filter((s) => s.status === 'OCCUPIED').length} color="#3B82F6" />
-        <SummaryCard label="ซ่อม" count={stalls.filter((s) => s.status === 'MAINTENANCE').length} color="#F59E0B" />
+        <SummaryCard label="ไม่ว่าง" count={stalls.filter((s) => s.status !== 'VACANT').length} color="#ff7e7eff" />
       </View>
       {/* Grid */}
       <FlatList
@@ -58,7 +58,7 @@ export default function StallStatus() {
         keyExtractor={(item) => item.slot_id.toString()}
         contentContainerStyle={styles.grid}
         renderItem={({ item }) => (
-          <View style={[styles.slot, { backgroundColor: STATUS_COLOR[item.status] || '#F3F4F6' }]}>
+          <View style={[styles.slot, { backgroundColor: item.status === 'VACANT' ? STATUS_COLOR.VACANT : STATUS_COLOR.UNAVAILABLE }]}>
             <Text style={styles.slotNum}>{item.slot_number}</Text>
             <Text style={styles.slotSize}>{item.slot_size || ''}</Text>
           </View>
