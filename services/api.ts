@@ -70,6 +70,7 @@ export const authAPI = {
   register: (userData: any) => api.post('/auth/register', userData),
   getProfile: () => api.get('/auth/me'),
   updateProfile: (data: any) => api.put('/auth/me', data),
+  updatePushToken: (push_token: string) => api.put('/auth/push-token', { push_token }),
 };
 
 // ─── Users ──────────────────────────────────────────────

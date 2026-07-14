@@ -19,7 +19,9 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.badb2o1y1.project66",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -44,6 +46,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e9d43593-5d0a-478f-9177-4978e4560931"
+      }
+    },
+    "owner": "badb2o1y1"
   }
 }
