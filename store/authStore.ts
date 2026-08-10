@@ -12,6 +12,7 @@ export interface User {
   last_name?: string;
   email?: string;
   phone?: string;
+  must_change_password?: boolean;
 }
 
 interface AuthState {

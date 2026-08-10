@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   legendDot: { width: 12, height: 12, borderRadius: 6 },
   legendText: { fontSize: 12, color: '#6B7280' },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8, justifyContent: 'center' },
   slot: {
     width: '30%', borderRadius: 12, padding: 10, alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },

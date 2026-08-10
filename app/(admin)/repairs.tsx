@@ -67,7 +67,10 @@ export default function AdminRepairs() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await fetchData(); setRefreshing(false); }} colors={['#DC2626']} />}
         contentContainerStyle={{ padding: 16 }}
       >
-        {filtered.map((req) => {
+        {filtered.length === 0 ? (
+          <Text style={{ textAlign: 'center', marginTop: 20, color: '#6B7280' }}>ไม่มีงานรอดำเนินการซ่อม</Text>
+        ) : (
+          filtered.map((req) => {
           const canAssign = req.status === 'PENDING' && (!req.assignments || req.assignments.length === 0);
           return (
             <TouchableOpacity
@@ -88,7 +91,8 @@ export default function AdminRepairs() {
               {canAssign && <Text style={styles.tapHint}>แตะเพื่อมอบหมายงาน →</Text>}
             </TouchableOpacity>
           );
-        })}
+        })
+        )}
       </ScrollView>
 
       {/* Modal — Assign */}

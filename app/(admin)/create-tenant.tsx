@@ -1,0 +1,446 @@
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator, Alert, Clipboard, FlatList, KeyboardAvoidingView,
+  Modal, Platform, ScrollView, StyleSheet, Text, TextInput,
+  TouchableOpacity, View, Keyboard, TouchableWithoutFeedback
+} from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { usersAPI, shopTypesAPI } from '../../services/api';
+
+interface ShopType {
+  shop_type_id: number;
+  type_name: string;
+  require_grease_trap: boolean;
+}
+
+// ─── ข้อมูลคำนำหน้า ────────────────────────────────────
+const TITLE_OPTIONS = ['นาย', 'นาง', 'นางสาว'];
+
+// ─── ข้อมูลที่อยู่ (จังหวัด → อำเภอ → ตำบล) ─────────
+const ADDRESS_DATA: Record<string, Record<string, string[]>> = {
+  'บุรีรัมย์': {
+    'เมืองบุรีรัมย์': ['ในเมือง', 'อิสาณ', 'เสม็ด', 'บ้านบัว', 'สะแกโพรง', 'สวายจีก', 'บ้านยาง', 'ลุมปุ๊ก', 'ชุมเห็ด', 'หลักเขต', 'สองห้อง', 'บัวทอง', 'ชุมแสง', 'หนองตาด', 'พระครู', 'ถลุงเหล็ก', 'กระสัง', 'กลันทา', 'เมืองฝาง'],
+    'คูเมือง': ['คูเมือง', 'ปะเคียบ', 'บ้านแพ', 'พรสำราญ', 'หินเหล็กไฟ', 'ตูมใหญ่', 'หนองขมาร'],
+    'กระสัง': ['กระสัง', 'ลำดวน', 'สองชั้น', 'สูงเนิน', 'หนองเต็ง', 'เมืองไผ่', 'ชุมแสง', 'บ้านปรือ', 'ห้วยสำราญ', 'กันทรารมย์', 'ศรีภูมิ'],
+    'นางรอง': ['นางรอง', 'สะเดา', 'ชุมแสง', 'หนองโบสถ์', 'หนองกง', 'ถนนหัก', 'หัวถนน', 'ทรัพย์พระยา', 'หนองไทร', 'ก้านเหลือง', 'บ้านสิงห์', 'ลำไทรโยง', 'ทุ่งแสงทอง', 'หนองยายพิมพ์', 'ชุมแสง'],
+    'หนองกี่': ['หนองกี่', 'เย้ยปราสาท', 'เมืองไผ่', 'ดอนอะราง', 'โคกสูง', 'ทุ่งกระตาดพัฒนา', 'ทุ่งกระเต็น', 'ท่าโพธิ์ชัย', 'โคกสว่าง', 'บุกระสัง'],
+    'ลำปลายมาศ': ['ลำปลายมาศ', 'หนองคู', 'แสลงพัน', 'ทะเมนชัย', 'ตลาดโพธิ์', 'หนองกะทิง', 'โคกกลาง', 'โคกสะอาด', 'เมืองแฝก', 'บ้านยาง', 'ผไทรินทร์', 'โคกล่าม', 'หินโคน', 'หนองบัวโคก', 'บุโพธิ์', 'หนองโดน'],
+    'ประโคนชัย': ['ประโคนชัย', 'แสลงโทน', 'บ้านไทร', 'ละเวี้ย', 'จรเข้มาก', 'ปังกู', 'โคกย่าง', 'โคกม้า', 'ไพศาล', 'ตะโกตาพิ', 'เขาคอก', 'หนองบอน', 'โคกตูม', 'ประทัดบุ', 'สี่เหลี่ยม', 'โคกมะขาม'],
+    'พุทไธสง': ['พุทไธสง', 'มะเฟือง', 'บ้านจาน', 'บ้านเป้า', 'บ้านแวง', 'บ้านยาง', 'หายโศก'],
+    'สตึก': ['สตึก', 'นิคม', 'ทุ่งวัง', 'เมืองแก', 'หนองใหญ่', 'ร่อนทอง', 'ดอนมนต์', 'ชุมแสง', 'ท่าม่วง', 'สะแก', 'สนามชัย', 'กระสัง'],
+    'ปะคำ': ['ปะคำ', 'ไทยเจริญ', 'หนองบัว', 'โคกมะม่วง', 'หูทำนบ'],
+    'แคนดง': ['แคนดง', 'ดงพลอง', 'สระบัว', 'หัวฝาย'],
+    'บ้านกรวด': ['บ้านกรวด', 'โนนเจริญ', 'หนองไม้งาม', 'ปราสาท', 'สายตะกู', 'หินลาด', 'บึงเจริญ', 'จันทบเพชร', 'เขาดินเหนือ'],
+    'ชำนิ': ['ชำนิ', 'หนองปล่อง', 'เมืองยาง', 'ช่อผกา', 'ละลวด', 'โคกสนวน'],
+    'บ้านด่าน': ['บ้านด่าน', 'ปราสาท', 'วังเหนือ', 'โนนขวาง'],
+    'โนนสุวรรณ': ['โนนสุวรรณ', 'ทุ่งจังหัน', 'โกรกแก้ว', 'ดงอีจาน', 'โนนสุวรรณ'],
+    'โนนดินแดง': ['โนนดินแดง', 'สำโรงใหม่', 'ลำนางรอง'],
+    'เฉลิมพระเกียรติ': ['เจริญสุข', 'ตาเป๊ก', 'อีสานเขต', 'ถาวร', 'ยายแย้มวัฒนา'],
+    'พลับพลาชัย': ['พลับพลาชัย', 'สะเดา', 'จันดุม', 'ป่าชัน', 'สำโรง'],
+    'ห้วยราช': ['ห้วยราช', 'สามแวง', 'ตาเสา', 'บ้านตะโก', 'สนวน', 'โคกเหล็ก', 'เมืองโพธิ์', 'ห้วยราชา'],
+    'บ้านใหม่ไชยพจน์': ['หนองแวง', 'ทองหลาง', 'แดงใหญ่', 'กู่สวนแตง', 'หนองเยือง'],
+    'หนองหงส์': ['หนองหงส์', 'สระแก้ว', 'ห้วยหิน', 'ไทยสามัคคี', 'สระทอง', 'เสาเดียว', 'เมืองฝ้าย'],
+  },
+  'นครราชสีมา': {
+    'เมืองนครราชสีมา': ['ในเมือง', 'โพธิ์กลาง', 'หนองจะบก', 'โคกสูง', 'หนองไผ่ล้อม', 'หมื่นไวย', 'พลกรัง', 'หัวทะเล', 'บ้านเกาะ', 'บ้านใหม่', 'พุดซา', 'จอหอ', 'ตลาด', 'หนองบัวศาลา'],
+    'ปากช่อง': ['ปากช่อง', 'กลางดง', 'จันทึก', 'วังกะทะ', 'หมูสี', 'หนองสาหร่าย', 'คลองม่วง', 'ขนงพระ'],
+    'พิมาย': ['ในเมือง', 'สัมฤทธิ์', 'โบสถ์', 'กระเบื้องใหญ่', 'ท่าหลวง', 'รังกาใหญ่', 'ชีวาน', 'นิคมสร้างตนเอง', 'กระชอน', 'ธารละหลอด', 'หนองระเวียง', 'ดงใหญ่'],
+  },
+  'สุรินทร์': {
+    'เมืองสุรินทร์': ['ในเมือง', 'ตั้งใจ', 'เพี้ยราม', 'นาดี', 'ท่าสว่าง', 'สลักได', 'ตาอ็อง', 'สำโรง', 'แกใหญ่', 'นอกเมือง', 'คอโค', 'สวาย', 'เฉนียง', 'เทนมีย์', 'บุฤาษี', 'ทุ่งกุลา', 'หนองบัว', 'กาเกาะ', 'แสลงพันธ์'],
+    'ปราสาท': ['กังแอน', 'ทมอ', 'ไพล', 'ปรือ', 'ทุ่งมน', 'ตาเบา', 'หนองใหญ่', 'โคกยาง', 'โคกสะอาด', 'บ้านไทร', 'โชคนาสาม', 'เชื้อเพลิง', 'ปราสาททนง', 'ตานี', 'บ้านพลวง', 'กันตวจระมวล', 'สมุด', 'ประทัดบุ'],
+  },
+};
+
+const PROVINCES = Object.keys(ADDRESS_DATA);
+
+export default function CreateTenantScreen() {
+  const [loading, setLoading] = useState(false);
+  const [shopTypes, setShopTypes] = useState<ShopType[]>([]);
+  const [createdCredentials, setCreatedCredentials] = useState<{ username: string; temp_password: string } | null>(null);
+
+  // Form fields
+  const [title, setTitle] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [addressLine, setAddressLine] = useState('');
+  const [province, setProvince] = useState('');
+  const [district, setDistrict] = useState('');
+  const [subdistrict, setSubdistrict] = useState('');
+  const [selectedShopType, setSelectedShopType] = useState<number | null>(null);
+
+  // Dropdown modal
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [dropdownTitle, setDropdownTitle] = useState('');
+  const [dropdownOptions, setDropdownOptions] = useState<string[]>([]);
+  const [dropdownCallback, setDropdownCallback] = useState<((val: string) => void) | null>(null);
+  const [dropdownSearch, setDropdownSearch] = useState('');
+
+  useEffect(() => {
+    shopTypesAPI.getAll()
+      .then((res) => setShopTypes(res.data.data || []))
+      .catch(() => {});
+  }, []);
+
+  const openDropdown = (ddTitle: string, options: string[], callback: (val: string) => void) => {
+    setDropdownTitle(ddTitle);
+    setDropdownOptions(options);
+    setDropdownCallback(() => callback);
+    setDropdownSearch('');
+    setDropdownVisible(true);
+  };
+
+  const selectDropdownItem = (item: string) => {
+    if (dropdownCallback) dropdownCallback(item);
+    setDropdownVisible(false);
+  };
+
+  // Derived options
+  const districtOptions = province && ADDRESS_DATA[province] ? Object.keys(ADDRESS_DATA[province]) : [];
+  const subdistrictOptions = province && district && ADDRESS_DATA[province]?.[district] ? ADDRESS_DATA[province][district] : [];
+
+  const handleCreate = async () => {
+    if (!firstName.trim() || !username.trim()) {
+      Alert.alert('แจ้งเตือน', 'กรุณากรอกชื่อ และ Username');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await usersAPI.createTenant({
+        title: title || undefined,
+        first_name: firstName.trim(),
+        last_name: lastName.trim() || undefined,
+        username: username.trim(),
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        address_line: addressLine.trim() || undefined,
+        province: province || undefined,
+        district: district || undefined,
+        subdistrict: subdistrict || undefined,
+      });
+
+      const { user, temp_password } = res.data.data;
+      setCreatedCredentials({ username: user.username, temp_password });
+    } catch (e: any) {
+      Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ไม่สามารถสร้างบัญชีได้');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = (text: string) => {
+    Clipboard.setString(text);
+    Alert.alert('คัดลอกแล้ว', `"${text}" ถูกคัดลอกไปยัง Clipboard แล้ว`);
+  };
+
+  const filteredDropdownOptions = dropdownSearch
+    ? dropdownOptions.filter((o) => o.includes(dropdownSearch))
+    : dropdownOptions;
+
+  // ─── Success Screen ───────────────────────────────────
+  if (createdCredentials) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.successCard}>
+          <View style={styles.successIcon}>
+            <Ionicons name="checkmark-circle" size={56} color="#059669" />
+          </View>
+          <Text style={styles.successTitle}>สร้างบัญชีสำเร็จ!</Text>
+          <Text style={styles.successSub}>ส่ง Credential ด้านล่างให้ผู้เช่าใหม่ครับ</Text>
+
+          <View style={styles.credBox}>
+            <Text style={styles.credLabel}>Username</Text>
+            <TouchableOpacity style={styles.credRow} onPress={() => handleCopy(createdCredentials.username)}>
+              <Text style={styles.credValue}>{createdCredentials.username}</Text>
+              <Ionicons name="copy-outline" size={16} color="#7C3AED" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.credBox}>
+            <Text style={styles.credLabel}>รหัสผ่านชั่วคราว</Text>
+            <TouchableOpacity style={styles.credRow} onPress={() => handleCopy(createdCredentials.temp_password)}>
+              <Text style={[styles.credValue, { letterSpacing: 2 }]}>{createdCredentials.temp_password}</Text>
+              <Ionicons name="copy-outline" size={16} color="#7C3AED" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.credNote}>⚠️ ผู้เช่าจะต้องเปลี่ยนรหัสผ่านเมื่อล็อกอินครั้งแรก</Text>
+
+          <TouchableOpacity style={styles.doneBtn} onPress={() => router.back()}>
+            <Text style={styles.doneBtnText}>เสร็จสิ้น</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // ─── Form Screen ──────────────────────────────────────
+  return (
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color="#374151" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>เพิ่มผู้เช่าใหม่</Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        {/* Form */}
+        <View style={styles.card}>
+
+          <SectionLabel label="ข้อมูลส่วนตัว" />
+
+          {/* คำนำหน้า — Dropdown */}
+          <DropdownField
+            label="คำนำหน้า"
+            value={title}
+            placeholder="เลือกคำนำหน้า"
+            onPress={() => openDropdown('คำนำหน้า', TITLE_OPTIONS, setTitle)}
+          />
+
+          <FieldRow label="ชื่อ *" value={firstName} onChange={setFirstName} placeholder="ชื่อจริง" />
+          <FieldRow label="นามสกุล" value={lastName} onChange={setLastName} placeholder="นามสกุล" />
+          <FieldRow label="เบอร์โทร" value={phone} onChange={setPhone} placeholder="08x-xxx-xxxx" keyboardType="phone-pad" maxLength={10} />
+          <FieldRow label="อีเมล" value={email} onChange={setEmail} placeholder="email@example.com" keyboardType="email-address" />
+
+          <SectionLabel label="ที่อยู่" />
+
+          <FieldRow label="ที่อยู่ (บ้านเลขที่ ถนน)" value={addressLine} onChange={setAddressLine} placeholder="123 ม.1 ถ.จิระ" />
+
+          {/* จังหวัด — Dropdown */}
+          <DropdownField
+            label="จังหวัด"
+            value={province}
+            placeholder="เลือกจังหวัด"
+            onPress={() => openDropdown('จังหวัด', PROVINCES, (val) => {
+              setProvince(val);
+              setDistrict('');
+              setSubdistrict('');
+            })}
+          />
+
+          {/* อำเภอ — Dropdown */}
+          <DropdownField
+            label="อำเภอ"
+            value={district}
+            placeholder={province ? 'เลือกอำเภอ' : 'เลือกจังหวัดก่อน'}
+            disabled={!province}
+            onPress={() => openDropdown('อำเภอ', districtOptions, (val) => {
+              setDistrict(val);
+              setSubdistrict('');
+            })}
+          />
+
+          {/* ตำบล — Dropdown */}
+          <DropdownField
+            label="ตำบล"
+            value={subdistrict}
+            placeholder={district ? 'เลือกตำบล' : 'เลือกอำเภอก่อน'}
+            disabled={!district}
+            onPress={() => openDropdown('ตำบล', subdistrictOptions, setSubdistrict)}
+          />
+
+          <SectionLabel label="ประเภทร้าน" />
+          <View style={styles.shopTypeRow}>
+            {shopTypes.map((st) => (
+              <TouchableOpacity
+                key={st.shop_type_id}
+                style={[styles.shopTypeBtn, selectedShopType === st.shop_type_id && styles.shopTypeBtnActive]}
+                onPress={() => setSelectedShopType(st.shop_type_id)}
+              >
+                <Text style={[styles.shopTypeBtnText, selectedShopType === st.shop_type_id && styles.shopTypeBtnTextActive]}>
+                  {st.type_name}
+                </Text>
+                {st.require_grease_trap && (
+                  <Text style={styles.greaseBadge}>มีบ่อดักไขมัน</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <SectionLabel label="ข้อมูลล็อกอิน" />
+
+          <FieldRow label="Username *" value={username} onChange={setUsername} placeholder="เช่น tenant001" autoCapitalize="none" />
+          <Text style={styles.usernameNote}>รหัสผ่านชั่วคราวจะถูกสร้างให้อัตโนมัติ</Text>
+
+        </View>
+
+        <TouchableOpacity
+          style={[styles.createBtn, loading && { opacity: 0.7 }]}
+          onPress={handleCreate}
+          disabled={loading}
+        >
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.createBtnText}>สร้างบัญชีผู้เช่า</Text>}
+        </TouchableOpacity>
+
+      </ScrollView>
+
+      {/* ─── Dropdown Modal ─── */}
+      <Modal visible={dropdownVisible} animationType="slide" transparent>
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View style={styles.ddOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.ddModal}>
+                <View style={styles.ddHeader}>
+                  <Text style={styles.ddTitle}>{dropdownTitle}</Text>
+                  <TouchableOpacity onPress={() => setDropdownVisible(false)}>
+                    <Ionicons name="close" size={24} color="#374151" />
+                  </TouchableOpacity>
+                </View>
+
+                {dropdownOptions.length > 5 && (
+                  <TextInput
+                    style={styles.ddSearchInput}
+                    placeholder={`ค้นหา${dropdownTitle}...`}
+                    placeholderTextColor="#9CA3AF"
+                    value={dropdownSearch}
+                    onChangeText={setDropdownSearch}
+                  />
+                )}
+
+                <FlatList
+                  data={filteredDropdownOptions}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity style={styles.ddItem} onPress={() => selectDropdownItem(item)}>
+                      <Text style={styles.ddItemText}>{item}</Text>
+                    </TouchableOpacity>
+                  )}
+                  style={{ maxHeight: 320 }}
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode="on-drag"
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+    </KeyboardAvoidingView>
+  );
+}
+
+function SectionLabel({ label }: { label: string }) {
+  return <Text style={styles.sectionLabel}>{label}</Text>;
+}
+
+function FieldRow({
+  label, value, onChange, placeholder, keyboardType, multiline, autoCapitalize, maxLength
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  placeholder?: string; keyboardType?: any; multiline?: boolean; autoCapitalize?: any; maxLength?: number;
+}) {
+  return (
+    <View style={styles.fieldRow}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TextInput
+        style={[styles.input, multiline && { height: 80, textAlignVertical: 'top' }]}
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor="#9CA3AF"
+        keyboardType={keyboardType || 'default'}
+        multiline={multiline}
+        autoCapitalize={autoCapitalize || 'words'}
+        maxLength={maxLength}
+      />
+    </View>
+  );
+}
+
+function DropdownField({
+  label, value, placeholder, onPress, disabled,
+}: {
+  label: string; value: string; placeholder: string;
+  onPress: () => void; disabled?: boolean;
+}) {
+  return (
+    <View style={styles.fieldRow}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <TouchableOpacity
+        style={[styles.input, styles.ddFieldRow, disabled && { opacity: 0.5 }]}
+        onPress={disabled ? undefined : onPress}
+        activeOpacity={disabled ? 1 : 0.7}
+      >
+        <Text style={[styles.ddFieldText, !value && { color: '#9CA3AF' }]}>
+          {value || placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F3F4F6' },
+  scroll: { paddingBottom: 40 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
+  },
+  backBtn: { width: 36, height: 36, justifyContent: 'center' },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
+  card: { backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 20, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#7C3AED', marginTop: 16, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  fieldRow: { marginBottom: 14 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+  input: {
+    backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB',
+    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#1F2937',
+  },
+  ddFieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ddFieldText: { fontSize: 14, color: '#1F2937' },
+  shopTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  shopTypeBtn: {
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
+    borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
+  },
+  shopTypeBtnActive: { borderColor: '#7C3AED', backgroundColor: '#F5F3FF' },
+  shopTypeBtnText: { fontSize: 13, color: '#6B7280', fontWeight: '600' },
+  shopTypeBtnTextActive: { color: '#7C3AED' },
+  greaseBadge: { fontSize: 10, color: '#D97706', marginTop: 2 },
+  usernameNote: { fontSize: 12, color: '#9CA3AF', marginTop: -6, marginBottom: 4 },
+  createBtn: {
+    backgroundColor: '#7C3AED', margin: 16, borderRadius: 14,
+    paddingVertical: 16, alignItems: 'center', elevation: 3,
+    shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8,
+  },
+  createBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  // Dropdown Modal
+  ddOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  ddModal: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 },
+  ddHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  ddTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
+  ddSearchInput: {
+    backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+    fontSize: 14, color: '#1F2937', marginBottom: 8,
+  },
+  ddItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  ddItemText: { fontSize: 15, color: '#1F2937' },
+
+  // Success
+  successCard: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
+  successIcon: { marginBottom: 16 },
+  successTitle: { fontSize: 22, fontWeight: '800', color: '#1F2937', marginBottom: 6 },
+  successSub: { fontSize: 14, color: '#6B7280', marginBottom: 28, textAlign: 'center' },
+  credBox: {
+    width: '100%', backgroundColor: '#F5F3FF', borderRadius: 14, padding: 16,
+    marginBottom: 14, borderWidth: 1.5, borderColor: '#DDD6FE',
+  },
+  credLabel: { fontSize: 12, color: '#7C3AED', fontWeight: '700', marginBottom: 6 },
+  credRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  credValue: { fontSize: 18, fontWeight: '800', color: '#1F2937', flex: 1 },
+  credNote: { fontSize: 13, color: '#D97706', textAlign: 'center', marginBottom: 24 },
+  doneBtn: { backgroundColor: '#7C3AED', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 48, alignItems: 'center' },
+  doneBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});

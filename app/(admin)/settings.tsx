@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 export default function AdminSettings() {
   const [waterRate, setWaterRate] = useState('');
   const [electricRate, setElectricRate] = useState('');
+  const [lateRentFine, setLateRentFine] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -30,6 +31,7 @@ export default function AdminSettings() {
       const rates = resRates.data.data || {};
       setWaterRate(String(rates.waterRatePerUnit || ''));
       setElectricRate(String(rates.electricRatePerUnit || ''));
+      setLateRentFine(String(rates.lateRentFine || '100'));
 
       // Clean deduplicate stall list by slot_number
       const rawStalls = resStalls.data.data || [];
@@ -56,6 +58,7 @@ export default function AdminSettings() {
       await settingsAPI.updateUtilityRates({
         waterRatePerUnit: parseFloat(waterRate),
         electricRatePerUnit: parseFloat(electricRate),
+        lateRentFine: parseFloat(lateRentFine),
       });
       Alert.alert('สำเร็จ', 'บันทึกการตั้งค่าตึกเรียบร้อย');
     } catch (e: any) {
@@ -107,7 +110,7 @@ export default function AdminSettings() {
     <View style={styles.container}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 40 }}>
         
-        {/* Utilitiy Card */}
+        {/* Utility Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>⚡ อัตราค่าน้ำ-ไฟ</Text>
           <View style={styles.field}>
@@ -117,6 +120,28 @@ export default function AdminSettings() {
           <View style={styles.field}>
             <Text style={styles.label}>ค่าไฟฟ้า (฿/หน่วย)</Text>
             <TextInput style={styles.input} value={electricRate} onChangeText={setElectricRate} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#9CA3AF" />
+          </View>
+          <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSaveRates} disabled={saving}>
+            <Text style={styles.saveTxt}>{saving ? 'กำลังบันทึก...' : 'บันทึกตั้งค่า'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Late Fine Card */}
+        <View style={[styles.card, { marginTop: 12 }]}>
+          <Text style={styles.cardTitle}>⚠️ ค่าปรับจ่ายช้า</Text>
+          <View style={styles.field}>
+            <Text style={styles.label}>ค่าปรับจ่ายค่าเช่าล่าช้า (฿/วัน)</Text>
+            <TextInput
+              style={styles.input}
+              value={lateRentFine}
+              onChangeText={setLateRentFine}
+              keyboardType="numeric"
+              placeholder="100"
+              placeholderTextColor="#9CA3AF"
+            />
+            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+              ระบบจะคำนวณค่าปรับสะสมแบบ: จำนวนวันที่เลยกำหนด × ฿{lateRentFine || '100'}
+            </Text>
           </View>
           <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSaveRates} disabled={saving}>
             <Text style={styles.saveTxt}>{saving ? 'กำลังบันทึก...' : 'บันทึกตั้งค่า'}</Text>

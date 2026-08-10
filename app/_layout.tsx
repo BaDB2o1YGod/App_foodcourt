@@ -17,11 +17,10 @@ export default function RootLayout() {
   // Sync Push Token to Backend when user logs in and we have a token
   useEffect(() => {
     if (isAuthenticated && expoPushToken?.data) {
-      alert('ได้ Push Token แล้ว! กำลังบันทึกลงฐานข้อมูล: ' + expoPushToken.data.substring(0, 20) + '...');
       console.log('[Push] Syncing token to backend:', expoPushToken.data);
       authAPI.updatePushToken(expoPushToken.data)
-        .then(() => alert('บันทึก Token ลงฐานข้อมูลสำเร็จ!'))
-        .catch(err => alert('[Push] Failed to sync token: ' + err.message));
+        .then(() => console.log('[Push] บันทึก Token ลงฐานข้อมูลสำเร็จ!'))
+        .catch(err => console.error('[Push] Failed to sync token: ' + err.message));
     } else if (isAuthenticated && !expoPushToken) {
       console.log('[Push] expoPushToken is null or undefined');
     }
@@ -32,6 +31,12 @@ export default function RootLayout() {
 
     if (!isAuthenticated) {
       router.replace('/(auth)/login');
+      return;
+    }
+
+    // Check for must_change_password first
+    if (user?.must_change_password) {
+      router.replace('/(auth)/change-password');
       return;
     }
 
@@ -52,7 +57,7 @@ export default function RootLayout() {
       default:
         router.replace('/(auth)/login');
     }
-  }, [isAuthenticated, isLoading, user?.role]);
+  }, [isAuthenticated, isLoading, user?.role, user?.must_change_password]);
 
   if (isLoading) {
     return (

@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatusBadge from '../../components/ui/StatusBadge';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { contractsAPI, usersAPI } from '../../services/api';
 
 export default function AdminTenants() {
@@ -54,6 +56,23 @@ export default function AdminTenants() {
   const filtered = tenants.filter((t) =>
     `${t.first_name} ${t.last_name} ${t.username}`.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleDeactivate = (id: number, name: string) => {
+    Alert.alert('ระงับบัญชี', `ต้องการระงับบัญชี ${name} หรือไม่?`, [
+      { text: 'ยกเลิก', style: 'cancel' },
+      {
+        text: 'ระงับ', style: 'destructive', onPress: async () => {
+          try {
+            await usersAPI.deactivate(id);
+            setSelected(null);
+            await fetchData();
+          } catch (e: any) {
+            Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ระงับบัญชีไม่สำเร็จ');
+          }
+        }
+      },
+    ]);
+  };
 
   const handleDelete = (id: number, name: string) => {
     Alert.alert('ลบผู้ใช้', `ต้องการลบ ${name} หรือไม่?`, [
@@ -157,6 +176,12 @@ export default function AdminTenants() {
             </View>
 
             <TouchableOpacity
+              style={styles.deactivateBtn}
+              onPress={() => handleDeactivate(selected.user_id, `${selected.first_name}`)}
+            >
+              <Text style={styles.deactivateText}>⚠️ ระงับบัญชีนี้</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={styles.deleteBtn}
               onPress={() => { setSelected(null); handleDelete(selected.user_id, `${selected.first_name}`); }}
             >
@@ -169,6 +194,14 @@ export default function AdminTenants() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* FAB — เพิ่มผู้เช่าใหม่ */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/(admin)/create-tenant')}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -214,6 +247,14 @@ const styles = StyleSheet.create({
   contractNum: { fontSize: 13, fontWeight: '700', color: '#1F2937' },
   deleteBtn: { backgroundColor: '#FEE2E2', borderRadius: 10, padding: 13, alignItems: 'center', marginBottom: 10 },
   deleteText: { color: '#DC2626', fontWeight: '700' },
+  deactivateBtn: { backgroundColor: '#FEF3C7', borderRadius: 10, padding: 13, alignItems: 'center', marginBottom: 10 },
+  deactivateText: { color: '#D97706', fontWeight: '700' },
   closeBtn: { backgroundColor: '#F3F4F6', borderRadius: 10, padding: 13, alignItems: 'center' },
   closeText: { color: '#374151', fontWeight: '600' },
+  fab: {
+    position: 'absolute', right: 20, bottom: 24,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: '#7C3AED', justifyContent: 'center', alignItems: 'center',
+    elevation: 6, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8,
+  },
 });

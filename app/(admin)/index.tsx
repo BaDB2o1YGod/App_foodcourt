@@ -55,6 +55,8 @@ export default function AdminDashboard() {
 
   const ADMIN_MENU = [
     { icon: 'people', label: 'ผู้เช่า', route: '/(admin)/tenants', color: '#3B82F6', bg: '#EFF6FF' },
+    { icon: 'person-add', label: 'เพิ่มผู้เช่า', route: '/(admin)/create-tenant', color: '#2563EB', bg: '#DBEAFE' },
+    { icon: 'document-text', label: 'สร้างสัญญา', route: '/(admin)/create-contract', color: '#4F46E5', bg: '#E0E7FF' },
     { icon: 'storefront', label: 'ล็อก', route: '/(admin)/stalls', color: '#10B981', bg: '#ECFDF5' },
     { icon: 'flash', label: 'บันทึกมิเตอร์', route: '/(admin)/meter-recording', color: '#F59E0B', bg: '#FFFBEB' },
     { icon: 'receipt', label: 'จัดการบิล', route: '/(admin)/bills', color: '#8B5CF6', bg: '#F5F3FF' },

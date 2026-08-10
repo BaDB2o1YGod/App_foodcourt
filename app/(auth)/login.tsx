@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import { Entypo } from '@expo/vector-icons';
 import { authAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
@@ -35,6 +36,11 @@ export default function LoginScreen() {
       const { token, user } = res.data.data;
       await SecureStore.setItemAsync('token', token);
       setAuth(user, token);
+      // บังคับเปลี่ยนรหัสผ่านครั้งแรก
+      if (user.must_change_password) {
+        router.replace('/(auth)/change-password');
+        return;
+      }
       // Redirect based on role
       switch (user.role) {
         case 'ADMIN': router.replace('/(admin)'); break;
@@ -95,7 +101,7 @@ export default function LoginScreen() {
                 secureTextEntry={!showPass}
               />
               <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
-                <Text style={styles.eyeText}>{showPass ? '🙈' : '👁'}</Text>
+                <Entypo name={showPass ? 'eye-with-line' : 'eye'} size={20} color="#374151" />
               </TouchableOpacity>
             </View>
           </View>

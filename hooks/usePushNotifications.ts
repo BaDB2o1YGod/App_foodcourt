@@ -1,5 +1,4 @@
 import Constants from 'expo-constants';
-import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -10,13 +9,6 @@ export interface PushNotificationState {
 }
 
 export const usePushNotifications = (): PushNotificationState => {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldPlaySound: false,
-      shouldShowAlert: true,
-      shouldSetBadge: false,
-    }),
-  });
 
   const [expoPushToken, setExpoPushToken] = useState<
     Notifications.ExpoPushToken | undefined
@@ -26,8 +18,8 @@ export const usePushNotifications = (): PushNotificationState => {
     Notifications.Notification | undefined
   >();
 
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
 
   async function registerForPushNotificationsAsync() {
     let token;
@@ -40,7 +32,7 @@ export const usePushNotifications = (): PushNotificationState => {
       finalStatus = status;
     }
     if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification');
+      console.error('Failed to get push token for push notification');
       return;
     }
 
@@ -75,6 +67,16 @@ export const usePushNotifications = (): PushNotificationState => {
   }
 
   useEffect(() => {
+    // setNotificationHandler must be called once on mount, not during render
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldPlaySound: false,
+        shouldShowBanner: true,  // แสดงเป็น heads-up / banner (แทน shouldShowAlert)
+        shouldShowList: true,    // แสดงใน notification center / shade (แทน shouldShowAlert)
+        shouldSetBadge: false,
+      }),
+    });
+
     registerForPushNotificationsAsync().then((token) => {
       setExpoPushToken(token);
       if (token) {
@@ -96,12 +98,10 @@ export const usePushNotifications = (): PushNotificationState => {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(
-          notificationListener.current
-        );
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, []);

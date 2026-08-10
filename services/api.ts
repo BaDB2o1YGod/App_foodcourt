@@ -71,6 +71,7 @@ export const authAPI = {
   getProfile: () => api.get('/auth/me'),
   updateProfile: (data: any) => api.put('/auth/me', data),
   updatePushToken: (push_token: string) => api.put('/auth/push-token', { push_token }),
+  changePassword: (newPassword: string) => api.post('/auth/change-password', { newPassword }),
 };
 
 // ─── Users ──────────────────────────────────────────────
@@ -80,6 +81,8 @@ export const usersAPI = {
   update: (id: number, data: any) => api.put(`/users/${id}`, data),
   delete: (id: number) => api.delete(`/users/${id}`),
   resetPassword: (id: number, data: any) => api.post(`/users/${id}/reset-password`, data),
+  createTenant: (data: any) => api.post('/users/create-tenant', data),
+  deactivate: (id: number) => api.patch(`/users/${id}/deactivate`),
 };
 
 // ─── Stalls ─────────────────────────────────────────────
@@ -166,6 +169,11 @@ export const dishwareTypeAPI = {
   create: (data: any) => api.post('/dishware-types', data),
   update: (id: number, data: any) => api.patch(`/dishware-types/${id}`, data),
   delete: (id: number) => api.delete(`/dishware-types/${id}`),
+};
+
+// ─── Shop Types ───────────────────────────────────────
+export const shopTypesAPI = {
+  getAll: () => api.get('/shop-types'),
 };
 
 export default api;
