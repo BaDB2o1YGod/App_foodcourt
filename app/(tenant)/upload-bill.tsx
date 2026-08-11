@@ -69,10 +69,23 @@ export default function UploadBill() {
             setUploading(true);
             try {
               const formData = new FormData();
+
+              // [S8 Fix] Detect MIME type from file extension
+              const ext = selectedImage.split('.').pop()?.toLowerCase() || 'jpg';
+              const mimeMap: Record<string, string> = {
+                jpg: 'image/jpeg',
+                jpeg: 'image/jpeg',
+                png: 'image/png',
+                gif: 'image/gif',
+                webp: 'image/webp',
+                heic: 'image/heic',
+              };
+              const mimeType = mimeMap[ext] || 'image/jpeg';
+
               formData.append('paymentProof', {
                 uri: selectedImage,
-                type: 'image/jpeg',
-                name: 'slip.jpg',
+                type: mimeType,
+                name: `slip.${ext}`,
               } as any);
 
               await billsAPI.uploadPayment(selectedBill.expense_id, formData);

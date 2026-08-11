@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { TouchableOpacity, Alert } from 'react-native';
 import { billsAPI } from '../../services/api';
 
 export default function TenantLayout() {
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
   const [pendingCount, setPendingCount] = useState(0);
+
+  // [S2] Client-side role guard
+  useEffect(() => {
+    if (user && user.role !== 'TENANT') {
+      router.replace('/(auth)/login');
+    }
+  }, [user]);
 
   useEffect(() => {
     (async () => {

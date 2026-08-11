@@ -1,10 +1,19 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
+import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { TouchableOpacity, Alert } from 'react-native';
 
 export default function MaintenanceLayout() {
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
+
+  // [S2] Client-side role guard
+  useEffect(() => {
+    if (user && user.role !== 'MAINTENANCE') {
+      router.replace('/(auth)/login');
+    }
+  }, [user]);
+
   const handleLogout = () => Alert.alert('ออกจากระบบ', 'ต้องการออกจากระบบหรือไม่?', [
     { text: 'ยกเลิก', style: 'cancel' },
     { text: 'ออก', style: 'destructive', onPress: logout },

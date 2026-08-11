@@ -1,10 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
+import { useEffect } from 'react';
 import { Alert, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 
 export default function AdminLayout() {
-  const { logout } = useAuthStore();
+  const { logout, user } = useAuthStore();
+
+  // [S2] Client-side role guard
+  useEffect(() => {
+    if (user && user.role !== 'ADMIN') {
+      router.replace('/(auth)/login');
+    }
+  }, [user]);
+
   const handleLogout = () => Alert.alert('ออกจากระบบ', 'ต้องการออกจากระบบหรือไม่?', [
     { text: 'ยกเลิก', style: 'cancel' },
     { text: 'ออก', style: 'destructive', onPress: logout },

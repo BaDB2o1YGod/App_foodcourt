@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Clipboard, FlatList, KeyboardAvoidingView,
+  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
   Modal, Platform, ScrollView, StyleSheet, Text, TextInput,
   TouchableOpacity, View, Keyboard, TouchableWithoutFeedback
 } from 'react-native';
+import * as ExpoClipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usersAPI, shopTypesAPI } from '../../services/api';
@@ -109,6 +110,24 @@ export default function CreateTenantScreen() {
       return;
     }
 
+    // [S6] Validate email format (if provided)
+    if (email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        Alert.alert('แจ้งเตือน', 'รูปแบบอีเมลไม่ถูกต้อง');
+        return;
+      }
+    }
+
+    // [S6] Validate phone format (if provided) — เบอร์โทรศัพท์ไทย 9-10 หลัก
+    if (phone.trim()) {
+      const phoneRegex = /^0\d{8,9}$/;
+      if (!phoneRegex.test(phone.trim())) {
+        Alert.alert('แจ้งเตือน', 'เบอร์โทรศัพท์ไม่ถูกต้อง (ตัวอย่าง: 0812345678)');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const res = await usersAPI.createTenant({
@@ -133,8 +152,8 @@ export default function CreateTenantScreen() {
     }
   };
 
-  const handleCopy = (text: string) => {
-    Clipboard.setString(text);
+  const handleCopy = async (text: string) => {
+    await ExpoClipboard.setStringAsync(text);
     Alert.alert('คัดลอกแล้ว', `"${text}" ถูกคัดลอกไปยัง Clipboard แล้ว`);
   };
 

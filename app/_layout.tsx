@@ -17,12 +17,12 @@ export default function RootLayout() {
   // Sync Push Token to Backend when user logs in and we have a token
   useEffect(() => {
     if (isAuthenticated && expoPushToken?.data) {
-      console.log('[Push] Syncing token to backend:', expoPushToken.data);
+      if (__DEV__) console.log('[Push] Syncing token to backend:', expoPushToken.data);
       authAPI.updatePushToken(expoPushToken.data)
-        .then(() => console.log('[Push] บันทึก Token ลงฐานข้อมูลสำเร็จ!'))
-        .catch(err => console.error('[Push] Failed to sync token: ' + err.message));
+        .then(() => { if (__DEV__) console.log('[Push] บันทึก Token ลงฐานข้อมูลสำเร็จ!'); })
+        .catch(err => { if (__DEV__) console.error('[Push] Failed to sync token: ' + err.message); });
     } else if (isAuthenticated && !expoPushToken) {
-      console.log('[Push] expoPushToken is null or undefined');
+      if (__DEV__) console.log('[Push] expoPushToken is null or undefined');
     }
   }, [isAuthenticated, expoPushToken]);
 

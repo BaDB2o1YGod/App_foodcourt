@@ -1,6 +1,11 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
+// Lazy import to avoid circular dependency — resolved at call site
+let _getAuthLogout: (() => Promise<void>) | null = null;
+export const setAuthLogoutFn = (fn: () => Promise<void>) => {
+  _getAuthLogout = fn;
+};
 
 // Auto-detect the dev machine's IP from Expo's hostUri (works with any WiFi)
 // Falls back to localhost for production builds
@@ -35,16 +40,16 @@ api.interceptors.request.use(
   async (config) => {
     let token = currentToken;
     if (!token) {
-      console.log('[API] Cache empty, reading SecureStore...');
+      if (__DEV__) console.log('[API] Cache empty, reading SecureStore...');
       token = await SecureStore.getItemAsync('token');
-      console.log('[API] SecureStore returned:', token ? 'YES' : 'NONE');
+      if (__DEV__) console.log('[API] SecureStore returned:', token ? 'YES' : 'NONE');
       if (token) currentToken = token;
     }
     if (token) {
-      console.log(`[API] Attaching token to ${config.url}`);
+      if (__DEV__) console.log(`[API] Attaching token to ${config.url}`);
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      console.log(`[API] ⚠️ NO TOKEN ATTACHED FOR ${config.url}`);
+      if (__DEV__) console.log(`[API] ⚠️ NO TOKEN ATTACHED FOR ${config.url}`);
     }
     return config;
   },
@@ -57,7 +62,13 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       setApiToken(null);
-      await SecureStore.deleteItemAsync('token');
+      // Trigger full logout via authStore so UI redirects to login
+      if (_getAuthLogout) {
+        await _getAuthLogout();
+      } else {
+        // Fallback: at least clear persisted token
+        await SecureStore.deleteItemAsync('token');
+      }
     }
     return Promise.reject(error);
   }

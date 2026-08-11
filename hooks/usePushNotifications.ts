@@ -43,10 +43,10 @@ export const usePushNotifications = (): PushNotificationState => {
     if (!projectId) {
       try {
         token = await Notifications.getExpoPushTokenAsync({
-          projectId: "project66"
+          projectId: 'e9d43593-5d0a-478f-9177-4978e4560931'
         });
       } catch (e) {
-        console.log("Error getting token", e);
+        if (__DEV__) console.log('Error getting token', e);
       }
     } else {
       token = await Notifications.getExpoPushTokenAsync({
@@ -79,7 +79,7 @@ export const usePushNotifications = (): PushNotificationState => {
 
     registerForPushNotificationsAsync().then((token) => {
       setExpoPushToken(token);
-      if (token) {
+      if (__DEV__ && token) {
         console.log('--- Expo Push Token ---');
         console.log(token.data);
         console.log('-----------------------');
@@ -93,7 +93,7 @@ export const usePushNotifications = (): PushNotificationState => {
 
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
+        if (__DEV__) console.log('[Push] Notification response received');
       });
 
     return () => {

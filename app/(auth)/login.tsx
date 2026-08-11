@@ -34,7 +34,15 @@ export default function LoginScreen() {
     try {
       const res = await authAPI.login({ login: username.trim(), password });
       const { token, user } = res.data.data;
-      await SecureStore.setItemAsync('token', token);
+
+      // [B1 Fix] Save token to secure storage FIRST — if this fails, don't setAuth
+      try {
+        await SecureStore.setItemAsync('token', token);
+      } catch (storeErr) {
+        Alert.alert('ผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่');
+        return;
+      }
+
       setAuth(user, token);
       // บังคับเปลี่ยนรหัสผ่านครั้งแรก
       if (user.must_change_password) {
@@ -48,8 +56,8 @@ export default function LoginScreen() {
         case 'MAINTENANCE': router.replace('/(maintenance)'); break;
         case 'EXECUTIVE': router.replace('/(executive)'); break;
       }
-    } catch (error: any) {
-      const msg = error?.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+    } catch (error: unknown) {
+      const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
       Alert.alert('เข้าสู่ระบบไม่สำเร็จ', msg);
     } finally {
       setLoading(false);
