@@ -54,7 +54,7 @@ function DonutChart({
           fill="transparent"
           strokeDasharray={`${circumference}`}
           strokeDashoffset={offset}
-          strokeLinecap="round"
+          strokeLinecap="butt"
         />
       </G>
     );
@@ -131,8 +131,12 @@ const legendStyles = StyleSheet.create({
 export default function ExecutiveDashboard() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState({
-    totalStalls: 0, occupied: 0, vacant: 0, occupancyRate: 0,
-    totalTenants: 0, pendingBills: 0, pendingRepairs: 0, completedRepairs: 0,
+    totalStalls: 0, occupied: 0, vacant: 0, maintenance: 0, occupancyRate: 0,
+    totalTenants: 0, totalBills: 0, paidBills: 0, waitingBills: 0, pendingBills: 0, unbilledBills: 0, targetBase: 0, paidRate: 0, monthLabel: '',
+    pendingRepairs: 0, completedRepairs: 0,
+    categoryList: [] as Array<{ category: string; count: number; percent: number; color: string }>,
+    slotList: [] as Array<{ slot_number: string; count: number }>,
+    maxSlotCount: 1,
   });
   const [loading, setLoading] = useState(true);
 
@@ -151,15 +155,81 @@ export default function ExecutiveDashboard() {
         const bills = billsRes?.data?.data || [];
         const repairs = repairsRes?.data?.data || [];
         const occ = stalls.filter((s: any) => s.status === 'OCCUPIED').length;
+        
+        const now = new Date();
+        const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const currentMonthLabel = `${monthNames[now.getMonth()]} ${now.getFullYear() + 543}`;
+
+        const currentMonthBills = bills.filter((b: any) => {
+          if (!b.billing_month && !b.created_at) return false;
+          const d = new Date(b.billing_month || b.created_at);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+
+        const paidCount = currentMonthBills.filter((b: any) => b.status === 'PAID').length;
+        const waitingCount = currentMonthBills.filter((b: any) => b.status === 'WAITING_VERIFICATION' || b.status === 'WAITING').length;
+        const pendingCount = currentMonthBills.filter((b: any) => b.status === 'PENDING' || b.status === 'OVERDUE').length;
+
+        const totalTenantsCount = (usersRes?.data?.data || []).length;
+        const targetBase = Math.max(totalTenantsCount, currentMonthBills.length);
+        const unbilledCount = Math.max(0, targetBase - currentMonthBills.length);
+
+        // Category & Slot Breakdown for Maintenance
+        const categoryMap: { [key: string]: number } = {};
+        const slotMap: { [key: string]: number } = {};
+        const totalRepairs = repairs.length;
+
+        repairs.forEach((r: any) => {
+          const cat = r.category || 'อื่นๆ';
+          categoryMap[cat] = (categoryMap[cat] || 0) + 1;
+
+          const fcName = r.slot?.food_court?.name ? `${r.slot.food_court.name} - ` : '';
+          const slotNum = r.slot?.slot_number ? `${fcName}ล็อก ${r.slot.slot_number}` : (r.slot_id ? `ล็อก #${r.slot_id}` : 'ไม่ระบุล็อก');
+          slotMap[slotNum] = (slotMap[slotNum] || 0) + 1;
+        });
+
+        const categoryColorMap: { [key: string]: string } = {
+          'ประปา': '#3B82F6',
+          'ไฟฟ้า': '#F59E0B',
+          'อุปกรณ์': '#8B5CF6',
+          'โครงสร้าง': '#6B7280',
+          'อื่นๆ': '#10B981',
+        };
+
+        const categoryList = Object.keys(categoryMap).map((cat) => ({
+          category: cat,
+          count: categoryMap[cat],
+          percent: totalRepairs > 0 ? Math.round((categoryMap[cat] / totalRepairs) * 100) : 0,
+          color: categoryColorMap[cat] || '#80639A',
+        })).sort((a, b) => b.count - a.count);
+
+        const slotList = Object.keys(slotMap).map((slotNum) => ({
+          slot_number: slotNum,
+          count: slotMap[slotNum],
+        })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+        const maxSlotCount = slotList.length > 0 ? Math.max(...slotList.map((s) => s.count)) : 1;
+
         setStats({
           totalStalls: stalls.length,
           occupied: occ,
           vacant: stalls.filter((s: any) => s.status === 'VACANT').length,
+          maintenance: stalls.filter((s: any) => s.status === 'MAINTENANCE').length,
           occupancyRate: stalls.length > 0 ? Math.round((occ / stalls.length) * 100) : 0,
-          totalTenants: (usersRes?.data?.data || []).length,
-          pendingBills: bills.filter((b: any) => b.status === 'PENDING').length,
+          totalTenants: totalTenantsCount,
+          totalBills: currentMonthBills.length,
+          paidBills: paidCount,
+          waitingBills: waitingCount,
+          pendingBills: pendingCount,
+          unbilledBills: unbilledCount,
+          targetBase: targetBase,
+          paidRate: targetBase > 0 ? Math.round((paidCount / targetBase) * 100) : 0,
+          monthLabel: currentMonthLabel,
           pendingRepairs: repairs.filter((r: any) => r.status === 'PENDING').length,
           completedRepairs: repairs.filter((r: any) => r.status === 'COMPLETED').length,
+          categoryList,
+          slotList,
+          maxSlotCount,
         });
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
@@ -171,6 +241,14 @@ export default function ExecutiveDashboard() {
   const stallSlices: DonutSlice[] = [
     { color: '#059669', value: stats.occupied },   // green — มีผู้เช่า
     { color: '#D1FAE5', value: stats.vacant },      // light green — ว่าง
+    { color: '#F59E0B', value: stats.maintenance }, // amber — ซ่อมบำรุง
+  ];
+
+  const billSlices: DonutSlice[] = [
+    { color: '#10B981', value: stats.paidBills },    // green — ชำระแล้ว
+    { color: '#F59E0B', value: stats.waitingBills }, // amber — รอยืนยันสลิป
+    { color: '#EF4444', value: stats.pendingBills }, // red — รอชำระ
+    { color: '#9CA3AF', value: stats.unbilledBills }, // grey — ยังไม่ออกบิล
   ];
 
   return (
@@ -203,22 +281,56 @@ export default function ExecutiveDashboard() {
         <View style={styles.legendWrapper}>
           <LegendItem color="#059669" label="มีผู้เช่า" value={stats.occupied} total={stats.totalStalls} />
           <LegendItem color="#D1FAE5" label="ว่าง" value={stats.vacant} total={stats.totalStalls} />
+          <LegendItem color="#F59E0B" label="ซ่อมบำรุง" value={stats.maintenance} total={stats.totalStalls} />
           <View style={styles.divider} />
           <Row label="ล็อกทั้งหมด" value={stats.totalStalls} />
         </View>
       </Section>
-
-      <Section title="ผู้เช่า">
-        <Row label="จำนวนผู้เช่า" value={stats.totalTenants} />
-      </Section>
-
-      <Section title="การเงิน">
-        <Row label="บิลรอชำระ" value={stats.pendingBills} danger={stats.pendingBills > 0} />
+      
+      <Section title={`การเงิน (ประจำเดือน ${stats.monthLabel})`}>
+        <View style={styles.donutWrapper}>
+          <DonutChart
+            slices={billSlices}
+            size={160}
+            strokeWidth={26}
+            centerLabel={`${stats.paidRate}%`}
+            centerSublabel="อัตราจัดเก็บ"
+          />
+        </View>
+        <View style={styles.legendWrapper}>
+          <LegendItem color="#10B981" label="ชำระแล้ว" value={stats.paidBills} total={stats.targetBase} />
+          <LegendItem color="#F59E0B" label="รอยืนยันสลิป" value={stats.waitingBills} total={stats.targetBase} />
+          <LegendItem color="#EF4444" label="รอชำระ" value={stats.pendingBills} total={stats.targetBase} />
+          <LegendItem color="#9CA3AF" label="ยังไม่ออกบิล" value={stats.unbilledBills} total={stats.targetBase} />
+          <View style={styles.divider} />
+          <Row label="ผู้เช่าทั้งหมด" value={stats.totalTenants} />
+          <Row label="บิลที่ออกแล้ว" value={stats.totalBills} />
+        </View>
       </Section>
 
       <Section title="งานซ่อม">
         <Row label="รอดำเนินการ" value={stats.pendingRepairs} danger={stats.pendingRepairs > 0} />
         <Row label="เสร็จสิ้น" value={stats.completedRepairs} />
+
+        {stats.categoryList.length > 0 && (
+          <>
+            <View style={styles.divider} />
+            <Text style={styles.subHeaderTitle}>🏷️ ประเภทงานที่แจ้งซ่อมบ่อย</Text>
+            {stats.categoryList.map((item) => (
+              <CategoryBarItem key={item.category} label={item.category} count={item.count} percent={item.percent} color={item.color} />
+            ))}
+          </>
+        )}
+
+        {stats.slotList.length > 0 && (
+          <>
+            <View style={styles.divider} />
+            <Text style={styles.subHeaderTitle}>ล็อกที่แจ้งซ่อมบ่อยที่สุด</Text>
+            {stats.slotList.map((item, index) => (
+              <SlotRankItem key={item.slot_number} rank={index} slotNumber={item.slot_number} count={item.count} maxCount={stats.maxSlotCount} />
+            ))}
+          </>
+        )}
       </Section>
     </ScrollView>
   );
@@ -238,6 +350,38 @@ function Row({ label, value, highlight, danger }: { label: string; value: any; h
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={[styles.rowValue, highlight && styles.purple, danger && styles.red]}>{value}</Text>
+    </View>
+  );
+}
+
+function CategoryBarItem({ label, count, percent, color }: { label: string; count: number; percent: number; color: string }) {
+  return (
+    <View style={barStyles.container}>
+      <View style={barStyles.header}>
+        <Text style={barStyles.label}>{label} ({count} ครั้ง)</Text>
+        <Text style={barStyles.pct}>{percent}%</Text>
+      </View>
+      <View style={barStyles.track}>
+        <View style={[barStyles.fill, { width: `${percent}%`, backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+}
+
+function SlotRankItem({ rank, slotNumber, count, maxCount }: { rank: number; slotNumber: string; count: number; maxCount: number }) {
+  const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+  const rankBadges = ['', '', '', '', ''];
+  const badge = rankBadges[rank] || `${rank + 1}.`;
+
+  return (
+    <View style={barStyles.container}>
+      <View style={barStyles.header}>
+        <Text style={barStyles.label}>{badge} {slotNumber}</Text>
+        <Text style={barStyles.value}>{count} ครั้ง</Text>
+      </View>
+      <View style={barStyles.track}>
+        <View style={[barStyles.fill, { width: `${percent}%`, backgroundColor: '#80639A' }]} />
+      </View>
     </View>
   );
 }
@@ -262,4 +406,15 @@ const styles = StyleSheet.create({
   rowValue: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
   purple: { color: '#7C3AED' },
   red: { color: '#EF4444' },
+  subHeaderTitle: { fontSize: 14, fontWeight: '700', color: '#374151', marginTop: 10, marginBottom: 12 },
+});
+
+const barStyles = StyleSheet.create({
+  container: { marginBottom: 12 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  label: { fontSize: 13, fontWeight: '600', color: '#374151' },
+  pct: { fontSize: 12, fontWeight: '700', color: '#6B7280' },
+  value: { fontSize: 12, fontWeight: '700', color: '#80639A' },
+  track: { height: 8, backgroundColor: '#E5E7EB', borderRadius: 4, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 4 },
 });

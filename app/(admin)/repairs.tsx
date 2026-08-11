@@ -7,7 +7,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
+  Image,
+  ActivityIndicator,
+  TouchableWithoutFeedback
 } from 'react-native';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -19,7 +22,22 @@ export default function AdminRepairs() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const [filter, setFilter] = useState('ALL');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const handleSelect = async (req: any) => {
+    setSelected(req);
+    setDetailsLoading(true);
+    try {
+      const res = await maintenanceAPI.getById(req.request_id);
+      setSelected(res.data.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -76,8 +94,7 @@ export default function AdminRepairs() {
             <TouchableOpacity
               key={req.request_id}
               style={styles.card}
-              onPress={() => setSelected(req)}
-              disabled={!canAssign}
+              onPress={() => handleSelect(req)}
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle} numberOfLines={1}>{req.title}</Text>
@@ -88,31 +105,116 @@ export default function AdminRepairs() {
               {req.assignments && req.assignments.length > 0 && (
                 <Text style={styles.assignedTo}><MaterialIcons name="engineering" size={14} color="#000000ff" /> {req.assignments[0]?.assignee?.first_name}</Text>
               )}
-              {canAssign && <Text style={styles.tapHint}>แตะเพื่อมอบหมายงาน →</Text>}
+              <Text style={styles.tapHint}>แตะเพื่อดูรายละเอียด {canAssign ? '/ มอบหมายงาน ' : ''}→</Text>
             </TouchableOpacity>
           );
         })
         )}
       </ScrollView>
 
-      {/* Modal — Assign */}
+      {/* Modal — Details & Assign */}
       <Modal visible={!!selected} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>{selected?.title}</Text>
-            <Text style={styles.modalSub}>เลือกช่างซ่อม:</Text>
-            {staff.map((s) => (
-              <TouchableOpacity key={s.user_id} style={styles.staffRow} onPress={() => handleAssign(selected.request_id, s.user_id)}>
-                <View style={styles.staffAvatar}><Text>{s.first_name[0]}</Text></View>
-                <Text style={styles.staffName}>{s.first_name} {s.last_name}</Text>
+          <View style={[styles.modal, { maxHeight: '90%' }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={[styles.modalTitle, { flex: 1, marginBottom: 0 }]}>{selected?.title}</Text>
+              <TouchableOpacity onPress={() => setSelected(null)}>
+                <MaterialIcons name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setSelected(null)}>
-              <Text style={styles.cancelText}>ยกเลิก</Text>
-            </TouchableOpacity>
+            </View>
+
+            {detailsLoading ? (
+              <ActivityIndicator size="large" color="#DC2626" style={{ marginVertical: 40 }} />
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={{ marginBottom: 16 }}>
+                  <StatusBadge status={selected?.status} size="sm" />
+                  {selected?.category && <Text style={[styles.meta, { marginTop: 8 }]}>🏷 {selected.category}</Text>}
+                  {selected?.description && <Text style={{ fontSize: 14, color: '#374151', marginTop: 8, lineHeight: 20 }}>{selected.description}</Text>}
+                  <Text style={[styles.meta, { marginTop: 8 }]}>📍 ล็อก {selected?.slot?.slot_number || '-'} • 📅 {selected?.requested_at ? new Date(selected.requested_at).toLocaleDateString('th-TH') : ''}</Text>
+                </View>
+
+                {/* Request Images */}
+                {selected?.images && selected.images.filter((img: any) => img.image_type === 'request').length > 0 && (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280', marginBottom: 4 }}>📷 รูปถ่ายตอนแจ้งซ่อม:</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {selected.images.filter((img: any) => img.image_type === 'request').map((img: any) => (
+                        <TouchableOpacity key={img.image_id} onPress={() => setSelectedImage(img.image_url)}>
+                          <Image source={{ uri: img.image_url }} style={{ width: 100, height: 100, borderRadius: 8, marginRight: 10, backgroundColor: '#E5E7EB' }} />
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {/* Completion Images */}
+                {selected?.images && selected.images.filter((img: any) => img.image_type === 'completion').length > 0 && (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669', marginBottom: 4 }}>✅ รูปถ่ายหลังซ่อมเสร็จ:</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {selected.images.filter((img: any) => img.image_type === 'completion').map((img: any) => (
+                        <TouchableOpacity key={img.image_id} onPress={() => setSelectedImage(img.image_url)}>
+                          <Image source={{ uri: img.image_url }} style={{ width: 100, height: 100, borderRadius: 8, marginRight: 10, backgroundColor: '#E5E7EB' }} />
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {selected?.status === 'PENDING' && (!selected?.assignments || selected.assignments.length === 0) && (
+                  <>
+                    <Text style={styles.modalSub}>เลือกช่างซ่อมเพื่อมอบหมายงาน:</Text>
+                    {staff.map((s) => (
+                      <TouchableOpacity key={s.user_id} style={styles.staffRow} onPress={() => handleAssign(selected.request_id, s.user_id)}>
+                        <View style={styles.staffAvatar}><Text>{s.first_name[0]}</Text></View>
+                        <Text style={styles.staffName}>{s.first_name} {s.last_name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
+
+                {selected?.assignments && selected.assignments.length > 0 && (
+                   <View style={{ marginTop: 8, padding: 12, backgroundColor: '#ECFDF5', borderRadius: 8 }}>
+                     <Text style={{ fontSize: 13, color: '#065F46', fontWeight: '600' }}>
+                       ผู้รับผิดชอบ: {selected.assignments[0]?.assignee?.first_name} {selected.assignments[0]?.assignee?.last_name}
+                     </Text>
+                   </View>
+                )}
+                
+                {selected?.status !== 'PENDING' && selected?.updates && selected.updates.length > 0 && (
+                   <View style={{ marginTop: 16 }}>
+                     <Text style={{ fontSize: 14, fontWeight: '700', color: '#1F2937', marginBottom: 8 }}>ประวัติการอัปเดต</Text>
+                     {selected.updates.map((u: any) => (
+                       <View key={u.update_id} style={{ flexDirection: 'row', gap: 12, marginBottom: 10 }}>
+                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B', marginTop: 6 }} />
+                         <View style={{ flex: 1 }}>
+                           <StatusBadge status={u.status} size="sm" />
+                           {u.comment && <Text style={{ fontSize: 13, color: '#374151', marginTop: 4 }}>{u.comment}</Text>}
+                           <Text style={{ fontSize: 11, color: '#9CA3AF' }}>{new Date(u.updated_at).toLocaleDateString('th-TH')}</Text>
+                         </View>
+                       </View>
+                     ))}
+                   </View>
+                )}
+              </ScrollView>
+            )}
           </View>
         </View>
+
+        {/* Fullscreen Image Overlay (inside the same Modal to prevent iOS multi-modal issue) */}
+        {!!selectedImage && (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center', zIndex: 999 }]}>
+            <TouchableOpacity style={{ position: 'absolute', top: 50, right: 20, zIndex: 1000, padding: 10, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }} onPress={() => setSelectedImage(null)}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>✕ ปิด</Text>
+            </TouchableOpacity>
+            <TouchableWithoutFeedback>
+              <Image source={{ uri: selectedImage || undefined }} style={{ width: '100%', height: '80%' }} resizeMode="contain" />
+            </TouchableWithoutFeedback>
+          </View>
+        )}
       </Modal>
+
     </View>
   );
 }

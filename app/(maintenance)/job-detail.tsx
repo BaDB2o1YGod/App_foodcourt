@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, TextInput, Image, Modal, TouchableWithoutFeedback } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
 import { maintenanceAPI } from '../../services/api';
 import StatusBadge from '../../components/ui/StatusBadge';
@@ -18,6 +19,49 @@ export default function JobDetail() {
   const [comment, setComment] = useState('');
   const [updating, setUpdating] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [completionImages, setCompletionImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+
+  const promptImageOption = () => {
+    Alert.alert(
+      'แนบรูปภาพหลักฐานการซ่อม',
+      'กรุณาเลือกช่องทางการเพิ่มรูปภาพ',
+      [
+        { text: '📷 ถ่ายรูปภาพ', onPress: takePhoto },
+        { text: '🖼️ เลือกจากคลังภาพ', onPress: pickLibrary },
+        { text: 'ยกเลิก', style: 'cancel' },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const takePhoto = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('แจ้งเตือน', 'กรุณาอนุญาตการเข้าถึงกล้องเพื่อถ่ายรูป');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setCompletionImages((prev) => [...prev, ...result.assets]);
+    }
+  };
+
+  const pickLibrary = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setCompletionImages((prev) => [...prev, ...result.assets]);
+    }
+  };
+
+  const removeCompletionImage = (index: number) => {
+    setCompletionImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     (async () => {
@@ -32,11 +76,33 @@ export default function JobDetail() {
   const handleUpdate = async (status: string) => {
     setUpdating(true);
     try {
-      await maintenanceAPI.updateStatus(Number(id), { status, comment });
+      const formData = new FormData();
+      formData.append('status', status);
+      if (comment) formData.append('comment', comment);
+
+      completionImages.forEach((asset, i) => {
+        let mimeType = asset.mimeType;
+        const ext = (asset.fileName || asset.uri).split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `completion_${Date.now()}_${i}.${ext}`;
+        if (!mimeType) {
+          if (ext === 'png') mimeType = 'image/png';
+          else if (ext === 'heic' || ext === 'heif') mimeType = 'image/heic';
+          else mimeType = 'image/jpeg';
+        }
+
+        formData.append('images', {
+          uri: asset.uri,
+          type: mimeType,
+          name: fileName,
+        } as any);
+      });
+
+      await maintenanceAPI.updateStatus(Number(id), formData);
       Alert.alert('สำเร็จ', 'อัปเดตสถานะเรียบร้อย');
       const res = await maintenanceAPI.getById(Number(id));
       setJob(res.data.data);
       setComment('');
+      setCompletionImages([]);
     } catch (e: any) {
       Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ไม่สามารถอัปเดตได้');
     } finally { setUpdating(false); }
@@ -59,19 +125,36 @@ export default function JobDetail() {
         
         {/* Images attached by tenant */}
         {job.images && job.images.filter((img: any) => img.image_type === 'request').length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
-            {job.images.filter((img: any) => img.image_type === 'request').map((img: any) => (
-              <TouchableOpacity key={img.image_id} onPress={() => setSelectedImage(img.image_url)}>
-                <Image source={{ uri: img.image_url }} style={styles.attachedImage} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <View style={{ marginTop: 10 }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#6B7280', marginBottom: 4 }}>📷 รูปถ่ายตอนแจ้งซ่อม:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+              {job.images.filter((img: any) => img.image_type === 'request').map((img: any) => (
+                <TouchableOpacity key={img.image_id} onPress={() => setSelectedImage(img.image_url)}>
+                  <Image source={{ uri: img.image_url }} style={styles.attachedImage} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Images attached by maintenance */}
+        {job.images && job.images.filter((img: any) => img.image_type === 'completion').length > 0 && (
+          <View style={{ marginTop: 10 }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669', marginBottom: 4 }}>✅ รูปถ่ายหลังซ่อมเสร็จ:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+              {job.images.filter((img: any) => img.image_type === 'completion').map((img: any) => (
+                <TouchableOpacity key={img.image_id} onPress={() => setSelectedImage(img.image_url)}>
+                  <Image source={{ uri: img.image_url }} style={styles.attachedImage} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
         )}
       </View>
 
       {/* Update Status */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>สถานะงาน</Text>
+        <Text style={styles.cardTitle}>รายละเอียดการซ่อม</Text>
         {job.status === 'COMPLETED' || job.status === 'REJECTED' ? (
           <View style={styles.finishedBox}>
             <Text style={styles.finishedText}>
@@ -88,6 +171,25 @@ export default function JobDetail() {
               onChangeText={setComment}
               multiline
             />
+            <TouchableOpacity style={styles.attachBtn} onPress={promptImageOption}>
+              <Text style={styles.attachBtnText}>📷 เพิ่มรูปถ่ายหลักฐาน {completionImages.length > 0 ? `(${completionImages.length} รูป)` : ''}</Text>
+            </TouchableOpacity>
+
+            {completionImages.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {completionImages.map((asset, index) => (
+                  <View key={index} style={{ marginRight: 10, position: 'relative' }}>
+                    <Image source={{ uri: asset.uri }} style={{ width: 70, height: 70, borderRadius: 8 }} />
+                    <TouchableOpacity 
+                      style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#EF4444', width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center' }}
+                      onPress={() => removeCompletionImage(index)}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
             <View style={styles.btnGrid}>
               {STATUS_OPTIONS.filter((s) => s.value !== job.status).map((s) => (
                 <TouchableOpacity
@@ -167,4 +269,6 @@ const styles = StyleSheet.create({
   fullImage: { width: '100%', height: '80%' },
   closeButton: { position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 10, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
   closeButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  attachBtn: { backgroundColor: '#F3F4F6', borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' },
+  attachBtnText: { color: '#374151', fontWeight: '600', fontSize: 13 },
 });

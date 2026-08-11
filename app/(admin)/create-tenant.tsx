@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
   Modal, Platform, ScrollView, StyleSheet, Text, TextInput,
-  TouchableOpacity, View, Keyboard, TouchableWithoutFeedback
+  TouchableOpacity, View, Keyboard, TouchableWithoutFeedback, Image
 } from 'react-native';
 import * as ExpoClipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { usersAPI, shopTypesAPI } from '../../services/api';
 
 interface ShopType {
@@ -73,6 +74,8 @@ export default function CreateTenantScreen() {
   const [district, setDistrict] = useState('');
   const [subdistrict, setSubdistrict] = useState('');
   const [selectedShopType, setSelectedShopType] = useState<number | null>(null);
+  
+  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   // Dropdown modal
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -130,7 +133,7 @@ export default function CreateTenantScreen() {
 
     setLoading(true);
     try {
-      const res = await usersAPI.createTenant({
+      let submitData: any = {
         title: title || undefined,
         first_name: firstName.trim(),
         last_name: lastName.trim() || undefined,
@@ -141,7 +144,37 @@ export default function CreateTenantScreen() {
         province: province || undefined,
         district: district || undefined,
         subdistrict: subdistrict || undefined,
-      });
+      };
+
+      if (profileImage) {
+        const formData = new FormData();
+        Object.keys(submitData).forEach((key) => {
+          if (submitData[key] !== undefined) {
+            formData.append(key, submitData[key]);
+          }
+        });
+        
+        const ext = profileImage.split('.').pop()?.toLowerCase() || 'jpg';
+        const mimeMap: Record<string, string> = {
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          png: 'image/png',
+          gif: 'image/gif',
+          webp: 'image/webp',
+          heic: 'image/heic',
+        };
+        const mimeType = mimeMap[ext] || 'image/jpeg';
+        
+        formData.append('profile_image', {
+          uri: profileImage,
+          name: `profile.${ext}`,
+          type: mimeType,
+        } as any);
+        
+        submitData = formData;
+      }
+
+      const res = await usersAPI.createTenant(submitData);
 
       const { user, temp_password } = res.data.data;
       setCreatedCredentials({ username: user.username, temp_password });
@@ -214,6 +247,43 @@ export default function CreateTenantScreen() {
 
         {/* Form */}
         <View style={styles.card}>
+
+          <View style={styles.imagePickerContainer}>
+            <TouchableOpacity
+              style={styles.imagePickerBtn}
+              onPress={async () => {
+                const result = await ImagePicker.launchImageLibraryAsync({
+                  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                  allowsEditing: true,
+                  aspect: [1, 1],
+                  quality: 0.8,
+                });
+                if (!result.canceled) {
+                  setProfileImage(result.assets[0].uri);
+                }
+              }}
+            >
+              {profileImage ? (
+                <View style={styles.avatarPreview}>
+                  <Image source={{ uri: profileImage }} style={styles.avatarImage} />
+                  <View style={styles.avatarCameraOverlay}>
+                    <Ionicons name="camera" size={24} color="#FFF" style={styles.avatarCameraIcon} />
+                  </View>
+                </View>
+              ) : (
+                <Ionicons name="camera-outline" size={32} color="#9CA3AF" />
+              )}
+            </TouchableOpacity>
+            {profileImage && (
+              <TouchableOpacity
+                style={styles.imageRemoveBtn}
+                onPress={() => setProfileImage(null)}
+              >
+                <Text style={styles.imageRemoveText}>ลบรูปภาพ</Text>
+              </TouchableOpacity>
+            )}
+            <Text style={styles.imagePickerHint}>รูปโปรไฟล์ (ไม่บังคับ)</Text>
+          </View>
 
           <SectionLabel label="ข้อมูลส่วนตัว" />
 
@@ -434,6 +504,24 @@ const styles = StyleSheet.create({
     shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8,
   },
   createBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  // Image Picker
+  imagePickerContainer: { alignItems: 'center', marginVertical: 16 },
+  imagePickerBtn: {
+    width: 88, height: 88, borderRadius: 44, backgroundColor: '#F3F4F6',
+    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB',
+    overflow: 'hidden'
+  },
+  avatarPreview: { width: '100%', height: '100%', position: 'relative' },
+  avatarImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  avatarCameraOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 32,
+    backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center'
+  },
+  avatarCameraIcon: { marginTop: -2 },
+  imageRemoveBtn: { marginTop: 8 },
+  imageRemoveText: { color: '#EF4444', fontSize: 13, fontWeight: '600' },
+  imagePickerHint: { color: '#9CA3AF', fontSize: 13, marginTop: 6 },
 
   // Dropdown Modal
   ddOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },

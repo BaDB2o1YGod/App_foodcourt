@@ -1,5 +1,5 @@
-import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { create } from 'zustand';
 import { authAPI, setApiToken, setAuthLogoutFn } from '../services/api';
 
 export type Role = 'ADMIN' | 'TENANT' | 'MAINTENANCE' | 'EXECUTIVE';
@@ -12,6 +12,7 @@ export interface User {
   last_name?: string;
   email?: string;
   phone?: string;
+  profile_image_url?: string;
   must_change_password?: boolean;
 }
 

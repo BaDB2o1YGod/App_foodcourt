@@ -92,7 +92,16 @@ export const usersAPI = {
   update: (id: number, data: any) => api.put(`/users/${id}`, data),
   delete: (id: number) => api.delete(`/users/${id}`),
   resetPassword: (id: number, data: any) => api.post(`/users/${id}/reset-password`, data),
-  createTenant: (data: any) => api.post('/users/create-tenant', data),
+  createTenant: (data: any | FormData) => {
+    const isFormData = data instanceof FormData;
+    return api.post('/users/create-tenant', data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    });
+  },
+  uploadProfileImage: (id: number, formData: FormData) => 
+    api.post(`/users/${id}/upload-profile`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   deactivate: (id: number) => api.patch(`/users/${id}/deactivate`),
 };
 
@@ -117,6 +126,7 @@ export const billsAPI = {
   uploadPayment: (id: number, formData: FormData) =>
     api.post(`/bills/${id}/payment`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
     }),
   verifyPayment: (paymentId: number, data: any) =>
     api.post(`/bills/payment/${paymentId}/verify`, data),
@@ -132,10 +142,12 @@ export const contractsAPI = {
   create: (formData: FormData) =>
     api.post('/contracts', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
     }),
   update: (id: number, formData: FormData) =>
     api.put(`/contracts/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
     }),
   terminate: (id: number) => api.post(`/contracts/${id}/terminate`),
 };
@@ -147,14 +159,20 @@ export const maintenanceAPI = {
   create: (formData: FormData) =>
     api.post('/maintenance', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
     }),
   update: (id: number, formData: FormData) =>
     api.put(`/maintenance/${id}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
     }),
   delete: (id: number) => api.delete(`/maintenance/${id}`),
   assignStaff: (id: number, data: any) => api.post(`/maintenance/${id}/assign`, data),
-  updateStatus: (id: number, data: any) => api.put(`/maintenance/${id}/status`, data),
+  updateStatus: (id: number, data: FormData | any) =>
+    api.put(`/maintenance/${id}/status`, data, {
+      headers: data instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+      timeout: 60000,
+    }),
 };
 
 // ─── Settings ───────────────────────────────────────────

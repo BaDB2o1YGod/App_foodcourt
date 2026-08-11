@@ -8,7 +8,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +25,13 @@ export default function AdminTenants() {
     if (!l) return f;
     if (f.includes(l)) return f;
     return `${f} ${l}`;
+  };
+
+  const getInitials = (f?: string) => {
+    if (!f) return '';
+    // Remove all Thai vowels and tone marks: ะาิีึืุูเแโใไั๊๋็์
+    const noVowels = f.replace(/[ะาิีึืุูเแโใไั๊๋็์]/g, '');
+    return noVowels.substring(0, 2);
   };
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -90,6 +99,45 @@ export default function AdminTenants() {
     ]);
   };
 
+  const handleUploadProfile = async (id: number) => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setLoading(true);
+        const imageUri = result.assets[0].uri;
+        const ext = imageUri.split('.').pop()?.toLowerCase() || 'jpg';
+        const mimeMap: Record<string, string> = {
+          jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+          gif: 'image/gif', webp: 'image/webp', heic: 'image/heic',
+        };
+        const mimeType = mimeMap[ext] || 'image/jpeg';
+
+        const formData = new FormData();
+        formData.append('profile_image', {
+          uri: imageUri,
+          name: `profile.${ext}`,
+          type: mimeType,
+        } as any);
+
+        await usersAPI.uploadProfileImage(id, formData);
+        Alert.alert('สำเร็จ', 'อัปเดตรูปโปรไฟล์ผู้เช่าแล้ว');
+        
+        await fetchData();
+        setSelected((prev: any) => ({ ...prev, profile_image_url: imageUri }));
+      }
+    } catch (e: any) {
+      Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ไม่สามารถอัปโหลดรูปภาพได้');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -110,9 +158,13 @@ export default function AdminTenants() {
         {filtered.map((t) => (
           <View key={t.user_id} style={styles.card}>
             <View style={styles.avatarRow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{t.first_name?.[0] || '?'}</Text>
-              </View>
+              {t.profile_image_url ? (
+                <Image source={{ uri: t.profile_image_url }} style={styles.avatarImageSmall} />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{getInitials(t.first_name)}</Text>
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{formatName(t.first_name, t.last_name)}</Text>
                 <Text style={styles.username}>@{t.username}</Text>
@@ -130,8 +182,25 @@ export default function AdminTenants() {
         <View style={styles.overlay}>
           <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
           <View style={styles.modal}>
-            <Text style={styles.modalName}>{formatName(selected?.first_name, selected?.last_name)}</Text>
-            <Text style={styles.modalUsername}>@{selected?.username}</Text>
+            <View style={styles.modalHeaderContent}>
+              <View style={styles.avatarContainer}>
+                {selected?.profile_image_url ? (
+                  <Image source={{ uri: selected.profile_image_url }} style={styles.avatarImage} />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Text style={styles.avatarInitials}>{getInitials(selected?.first_name)}</Text>
+                  </View>
+                )}
+                <TouchableOpacity 
+                  style={styles.editAvatarBtn} 
+                  onPress={() => handleUploadProfile(selected.user_id)}
+                >
+                  <Ionicons name="camera" size={16} color="#FFF" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.modalName}>{formatName(selected?.first_name, selected?.last_name)}</Text>
+              <Text style={styles.modalUsername}>@{selected?.username}</Text>
+            </View>
             <View style={styles.infoGroup}>
               {selected?.id_card_number && <InfoRow label="รหัส ปชช." value={selected.id_card_number} />}
               {selected?.phone && <InfoRow label="โทร" value={selected.phone} />}
@@ -224,10 +293,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#DBEAFE', justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: 18, fontWeight: '700', color: '#1D4ED8' },
-  name: { fontSize: 14, fontWeight: '700', color: '#1F2937' },
+  avatarRow: { flexDirection: 'row', alignItems: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#DBEAFE', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  avatarImageSmall: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E5E7EB', marginRight: 12 },
+  avatarText: { fontSize: 16, fontWeight: '700', color: '#1D4ED8' },
+  name: { fontSize: 15, fontWeight: '700', color: '#1F2937' },
   username: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
   detailBtn: { paddingHorizontal: 12, paddingVertical: 7, backgroundColor: '#EFF6FF', borderRadius: 8 },
   detailText: { fontSize: 12, color: '#3B82F6', fontWeight: '600' },
@@ -257,4 +327,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#7C3AED', justifyContent: 'center', alignItems: 'center',
     elevation: 6, shadowColor: '#7C3AED', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8,
   },
+  
+  // Modal Avatar Styles
+  modalHeaderContent: { alignItems: 'center', marginBottom: 16 },
+  avatarContainer: { position: 'relative', marginBottom: 12 },
+  avatarImage: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E5E7EB' },
+  avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#DBEAFE', justifyContent: 'center', alignItems: 'center' },
+  avatarInitials: { fontSize: 24, fontWeight: '700', color: '#1D4ED8' },
+  editAvatarBtn: { 
+    position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, 
+    borderRadius: 14, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: '#FFF'
+  }
 });

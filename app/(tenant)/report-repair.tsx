@@ -44,15 +44,13 @@ export default function ReportRepair() {
       formData.append('description', description);
       formData.append('category', category);
       images.forEach((asset, i) => {
-        let fileName = asset.fileName;
         let mimeType = asset.mimeType;
+        const ext = (asset.fileName || asset.uri).split('.').pop()?.toLowerCase() || 'jpg';
         
-        if (!fileName) {
-          const ext = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
-          fileName = `repair_${i}.${ext}`;
-        }
+        // Force unique filename to prevent overwriting/backend errors
+        const fileName = `repair_${Date.now()}_${i}.${ext}`;
+        
         if (!mimeType) {
-          const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
           if (ext === 'png') mimeType = 'image/png';
           else if (ext === 'heic' || ext === 'heif') mimeType = 'image/heic';
           else mimeType = 'image/jpeg';
