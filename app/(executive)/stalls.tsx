@@ -62,8 +62,8 @@ export default function ExecutiveStalls() {
     Alert.alert(
       `🏪 ล็อก ${stall.slot_number}`,
       occupied
-        ? `ผู้เช่า: ${tenant?.first_name ?? '-'} ${tenant?.last_name ?? ''}\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size || '-'}`
-        : `ล็อกว่าง\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size || '-'}`,
+        ? `ผู้เช่า: ${tenant?.first_name ?? '-'} ${tenant?.last_name ?? ''}\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size ? `${stall.slot_size} ตร.ม.` : '-'}`
+        : `ล็อกว่าง\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size ? `${stall.slot_size} ตร.ม.` : '-'}`,
       [{ text: 'ปิด', style: 'cancel' }]
     );
   };
@@ -137,7 +137,7 @@ export default function ExecutiveStalls() {
               onPress={() => handlePress(st)}
             >
               <Text style={styles.slotNum}>{st.slot_number}</Text>
-              {st.slot_size ? <Text style={styles.slotSize}>{st.slot_size}</Text> : null}
+              {st.slot_size ? <Text style={styles.slotSize}>{st.slot_size} ตร.ม.</Text> : null}
               <Text style={styles.slotRent}>฿{Number(st.rent || 0).toLocaleString()}</Text>
               {isOccupied && tenant ? (
                 <Text style={styles.slotTenant} numberOfLines={1}>

@@ -67,6 +67,7 @@ export default function CreateTenantScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [addressLine, setAddressLine] = useState('');
@@ -89,6 +90,27 @@ export default function CreateTenantScreen() {
       .then((res) => setShopTypes(res.data.data || []))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (username.length < 3) {
+      setUsernameError('');
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await usersAPI.getAll({ search: username });
+        const exists = res.data.data.some((u: any) => u.username.toLowerCase() === username.toLowerCase());
+        if (exists) {
+          setUsernameError('Username นี้ถูกใช้งานแล้ว');
+        } else {
+          setUsernameError('');
+        }
+      } catch (e) {
+        // Ignore
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [username]);
 
   const openDropdown = (ddTitle: string, options: string[], callback: (val: string) => void) => {
     setDropdownTitle(ddTitle);
@@ -113,6 +135,11 @@ export default function CreateTenantScreen() {
       return;
     }
 
+    if (usernameError) {
+      Alert.alert('แจ้งเตือน', 'Username นี้ถูกใช้งานแล้ว โปรดเปลี่ยนใหม่');
+      return;
+    }
+
     // [S6] Validate email format (if provided)
     if (email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -133,11 +160,15 @@ export default function CreateTenantScreen() {
 
     setLoading(true);
     try {
+      const tempPassword = Math.random().toString(36).slice(-8);
+
       let submitData: any = {
         title: title || undefined,
         first_name: firstName.trim(),
         last_name: lastName.trim() || undefined,
         username: username.trim(),
+        password: tempPassword,
+        role: 'TENANT',
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
         address_line: addressLine.trim() || undefined,
@@ -165,7 +196,7 @@ export default function CreateTenantScreen() {
         };
         const mimeType = mimeMap[ext] || 'image/jpeg';
         
-        formData.append('profile_image', {
+        formData.append('profileImage', {
           uri: profileImage,
           name: `profile.${ext}`,
           type: mimeType,
@@ -176,8 +207,8 @@ export default function CreateTenantScreen() {
 
       const res = await usersAPI.createTenant(submitData);
 
-      const { user, temp_password } = res.data.data;
-      setCreatedCredentials({ username: user.username, temp_password });
+      const user = res.data.data || res.data.user || submitData;
+      setCreatedCredentials({ username: user.username || username, temp_password: tempPassword });
     } catch (e: any) {
       Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ไม่สามารถสร้างบัญชีได้');
     } finally {
@@ -358,6 +389,7 @@ export default function CreateTenantScreen() {
           <SectionLabel label="ข้อมูลล็อกอิน" />
 
           <FieldRow label="Username *" value={username} onChange={setUsername} placeholder="เช่น tenant001" autoCapitalize="none" />
+          {usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
           <Text style={styles.usernameNote}>รหัสผ่านชั่วคราวจะถูกสร้างให้อัตโนมัติ</Text>
 
         </View>
@@ -498,6 +530,7 @@ const styles = StyleSheet.create({
   shopTypeBtnTextActive: { color: '#7C3AED' },
   greaseBadge: { fontSize: 10, color: '#D97706', marginTop: 2 },
   usernameNote: { fontSize: 12, color: '#9CA3AF', marginTop: -6, marginBottom: 4 },
+  errorText: { color: '#EF4444', fontSize: 12, marginTop: -8, marginBottom: 8, marginLeft: 16 },
   createBtn: {
     backgroundColor: '#7C3AED', margin: 16, borderRadius: 14,
     paddingVertical: 16, alignItems: 'center', elevation: 3,

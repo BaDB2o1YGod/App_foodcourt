@@ -43,11 +43,11 @@ export default function AdminLayout() {
       <Tabs.Screen name="stalls" options={{ title: 'ล็อก', tabBarIcon: ({ color, size }) => <Ionicons name="storefront" size={size} color={color} />, headerTitle: 'จัดการล็อก' }} />
       <Tabs.Screen name="meter-recording" options={{ href: null, headerTitle: 'บันทึกมิเตอร์' }} />
       <Tabs.Screen name="monthly-billing" options={{ href: null, headerTitle: 'ออกบิลรายเดือน' }} />
-      <Tabs.Screen name="dishware" options={{ href: null, headerTitle: 'คำสั่งซื้อภาชนะ' }} />
       <Tabs.Screen name="reports" options={{ href: null, headerTitle: 'รายงาน' }} />
       <Tabs.Screen name="settings" options={{ href: null, headerTitle: 'ตั้งค่าระบบ' }} />
       <Tabs.Screen name="create-contract" options={{ href: null, headerTitle: 'สร้างสัญญาเช่า' }} />
       <Tabs.Screen name="create-tenant" options={{ href: null, headerTitle: 'เพิ่มผู้เช่า' }} />
+      <Tabs.Screen name="cancellation-requests" options={{ href: null, headerTitle: 'คำร้องขอยกเลิกเช่า' }} />
     </Tabs>
   );
 }

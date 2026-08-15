@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Image,
   ScrollView,
@@ -20,7 +20,7 @@ const QUICK_MENU = [
   { icon: 'time', label: 'ประวัติชำระ', route: '/(tenant)/payment-history', color: '#8B5CF6', bg: '#F5F3FF' },
   { icon: 'construct', label: 'แจ้งซ่อม', route: '/(tenant)/report-repair', color: '#EF4444', bg: '#FEF2F2' },
   { icon: 'clipboard', label: 'ติดตามซ่อม', route: '/(tenant)/track-repairs', color: '#6B7280', bg: '#F9FAFB' },
-  { icon: 'restaurant', label: 'ถ้วยชาม', route: '/(tenant)/dishware', color: '#F59E0B', bg: '#FFFBEB' },
+  { icon: 'exit', label: 'ยกเลิกสัญญา', route: '/(tenant)/cancellation-form', color: '#E11D48', bg: '#FFF1F2' },
 ];
 
 export default function TenantDashboard() {
@@ -30,8 +30,10 @@ export default function TenantDashboard() {
   const [pendingBillCount, setPendingBillCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      (async () => {
       if (!useAuthStore.getState().isAuthenticated) return;
       try {
         // We use getAll instead of getDueBills to ensure we get the full payments array
@@ -73,10 +75,12 @@ export default function TenantDashboard() {
       } catch (e) {
         console.warn(e);
       } finally {
-        setLoading(false);
+        if (isActive) setLoading(false);
       }
     })();
-  }, []);
+    return () => { isActive = false; };
+  }, [])
+  );
 
   if (loading) return <LoadingSpinner message="กำลังโหลด..." />;
 

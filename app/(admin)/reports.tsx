@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { stallsAPI, billsAPI, maintenanceAPI, dishwareAPI } from '../../services/api';
+import { stallsAPI, billsAPI, maintenanceAPI } from '../../services/api';
 import { exportMaintenanceReportPDF, exportOverdueBillsReportPDF } from '../../services/pdfReportService';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { DonutSlice, DonutChart, LegendItem, CategoryBarItem, SlotRankItem } from '../../components/ui/Charts';
@@ -12,7 +12,6 @@ export default function AdminReports() {
     totalStalls: 0, occupied: 0, vacant: 0, maintenance: 0, occupancyRate: 0,
     totalBills: 0, paidBills: 0, waitingBills: 0, pendingBills: 0, unbilledBills: 0, targetBase: 0, paidRate: 0,
     pendingRepairs: 0, completedRepairs: 0,
-    pendingDishware: 0, approvedDishware: 0,
     categoryList: [] as Array<{ category: string; count: number; percent: number; color: string }>,
     slotList: [] as Array<{ slot_number: string; count: number }>,
     maxSlotCount: 1,
@@ -32,11 +31,10 @@ export default function AdminReports() {
 
   const fetchData = async (targetStart: Date, targetEnd: Date) => {
     try {
-      const [stallsRes, billsRes, repairsRes, dishwareRes] = await Promise.all([
+      const [stallsRes, billsRes, repairsRes] = await Promise.all([
         stallsAPI.getAll(),
         billsAPI.getAll(),
         maintenanceAPI.getAll(),
-        dishwareAPI.getAll(),
       ]);
       const rawStalls = stallsRes.data.data || [];
       
@@ -57,7 +55,6 @@ export default function AdminReports() {
       
       const allBills = billsRes.data.data || [];
       const allRepairs = repairsRes.data.data || [];
-      const dishware = dishwareRes.data.data || [];
 
       // Filter by Date Range
       const targetStartStartOfDay = new Date(targetStart);
@@ -139,8 +136,6 @@ export default function AdminReports() {
         paidRate: targetBase > 0 ? Math.round((paidCount / targetBase) * 100) : 0,
         pendingRepairs: currentMonthRepairs.filter((r: any) => r.status === 'PENDING').length,
         completedRepairs: currentMonthRepairs.filter((r: any) => r.status === 'COMPLETED').length,
-        pendingDishware: dishware.filter((d: any) => d.status === 'PENDING').length,
-        approvedDishware: dishware.filter((d: any) => d.status === 'APPROVED').length,
         categoryList,
         slotList,
         maxSlotCount,
@@ -310,11 +305,6 @@ export default function AdminReports() {
               <><Ionicons name="document-text" size={18} color="#7C3AED" /><Text style={styles.pdfBtnTextPurple}>ส่งออก PDF รายงานแจ้งซ่อม</Text></>
             )}
           </TouchableOpacity>
-        </Section>
-
-        <Section title="🍽 ภาชนะ">
-          <StatRow label="รออนุมัติ" value={data.pendingDishware} />
-          <StatRow label="อนุมัติแล้ว" value={data.approvedDishware} />
         </Section>
       </ScrollView>
     </View>

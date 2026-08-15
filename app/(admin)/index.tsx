@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Image } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { stallsAPI, billsAPI, maintenanceAPI } from '../../services/api';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -36,7 +36,11 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => { fetchData().finally(() => setLoading(false)); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchData().finally(() => setLoading(false));
+    }, [])
+  );
 
   if (loading) return <LoadingSpinner message="กำลังเชื่อมต่อ server..." />;
 
@@ -60,10 +64,10 @@ export default function AdminDashboard() {
     { icon: 'storefront', label: 'ล็อก', route: '/(admin)/stalls', color: '#10B981', bg: '#ECFDF5' },
     { icon: 'flash', label: 'บันทึกมิเตอร์', route: '/(admin)/meter-recording', color: '#F59E0B', bg: '#FFFBEB' },
     { icon: 'receipt', label: 'จัดการบิล', route: '/(admin)/bills', color: '#8B5CF6', bg: '#F5F3FF' },
-    { icon: 'invoice-text-send', family: 'MaterialCommunityIcons', label: 'ออกบิลรายเดือน', route: '/(admin)/meter-recording', color: '#ffc400ff', bg: '#F5F3FF' },
-    { icon: 'restaurant', label: 'ภาชนะ', route: '/(admin)/dishware', color: '#F97316', bg: '#FFF7ED' },
+    { icon: 'invoice-text-send', family: 'MaterialCommunityIcons', label: 'ออกบิลรายเดือน', route: '/(admin)/monthly-billing', color: '#ffc400ff', bg: '#F5F3FF' },
     { icon: 'bar-chart', label: 'รายงาน', route: '/(admin)/reports', color: '#6366F1', bg: '#EEF2FF' },
     { icon: 'construct', label: 'ซ่อม', route: '/(admin)/repairs', color: '#EF4444', bg: '#FEF2F2' },
+    { icon: 'document-text', label: 'คำร้องยกเลิก', route: '/(admin)/cancellation-requests', color: '#E11D48', bg: '#FFF1F2' },
     { icon: 'settings', label: 'ตั้งค่า', route: '/(admin)/settings', color: '#6B7280', bg: '#F9FAFB' },
   ];
 

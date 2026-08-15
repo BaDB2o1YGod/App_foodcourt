@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Tabs, router } from 'expo-router';
+import { Tabs, router, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { TouchableOpacity, Alert } from 'react-native';
@@ -8,6 +8,7 @@ import { billsAPI } from '../../services/api';
 export default function TenantLayout() {
   const { logout, user } = useAuthStore();
   const [pendingCount, setPendingCount] = useState(0);
+  const pathname = usePathname();
 
   // [S2] Client-side role guard
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function TenantLayout() {
         console.warn(e);
       }
     })();
-  }, []);
+  }, [pathname]);
 
   const handleLogout = () => {
     Alert.alert('ออกจากระบบ', 'ต้องการออกจากระบบหรือไม่?', [
@@ -84,14 +85,6 @@ export default function TenantLayout() {
         }}
       />
       <Tabs.Screen
-        name="dishware"
-        options={{
-          title: 'ภาชนะ',
-          tabBarIcon: ({ color, size }) => <Ionicons name="restaurant" size={size} color={color} />,
-          headerTitle: 'สั่งซื้อภาชนะ',
-        }}
-      />
-      <Tabs.Screen
         name="contracts"
         options={{
           title: 'สัญญาเช่า',
@@ -104,6 +97,7 @@ export default function TenantLayout() {
       <Tabs.Screen name="payment-history" options={{ href: null, headerTitle: 'ประวัติการชำระเงิน' }} />
       <Tabs.Screen name="stall-status" options={{ href: null, headerTitle: 'สถานะล็อก' }} />
       <Tabs.Screen name="track-repairs" options={{ href: null, headerTitle: 'ติดตามการซ่อม' }} />
+      <Tabs.Screen name="cancellation-form" options={{ href: null, headerTitle: 'ฟอร์มยกเลิกเช่า' }} />
     </Tabs>
   );
 }

@@ -7,8 +7,11 @@ export default function AdminSettings() {
   const [waterRate, setWaterRate] = useState('');
   const [electricRate, setElectricRate] = useState('');
   const [lateRentFine, setLateRentFine] = useState('');
+  const [dueDayOfMonth, setDueDayOfMonth] = useState('10');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isEditingUtility, setIsEditingUtility] = useState(false);
+  const [isEditingFine, setIsEditingFine] = useState(false);
 
   // Stall Settings State
   const [allStalls, setAllStalls] = useState<any[]>([]);
@@ -32,6 +35,7 @@ export default function AdminSettings() {
       setWaterRate(String(rates.waterRatePerUnit || ''));
       setElectricRate(String(rates.electricRatePerUnit || ''));
       setLateRentFine(String(rates.lateRentFine || '100'));
+      setDueDayOfMonth(String(rates.dueDayOfMonth || rates.paymentDueDays || '10'));
 
       // Clean deduplicate stall list by slot_number
       const rawStalls = resStalls.data.data || [];
@@ -51,7 +55,7 @@ export default function AdminSettings() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleSaveRates = async () => {
+  const handleSaveUtilityRates = async () => {
     if (!waterRate || !electricRate) { Alert.alert('แจ้งเตือน', 'กรุณากรอกราคาให้ครบ'); return; }
     setSaving(true);
     try {
@@ -59,8 +63,27 @@ export default function AdminSettings() {
         waterRatePerUnit: parseFloat(waterRate),
         electricRatePerUnit: parseFloat(electricRate),
         lateRentFine: parseFloat(lateRentFine),
+        dueDayOfMonth: parseInt(dueDayOfMonth, 10) || 10,
       });
-      Alert.alert('สำเร็จ', 'บันทึกการตั้งค่าตึกเรียบร้อย');
+      Alert.alert('สำเร็จ', 'บันทึกอัตราค่าน้ำ-ไฟเรียบร้อย');
+      setIsEditingUtility(false);
+    } catch (e: any) {
+      Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ไม่สามารถบันทึกได้');
+    } finally { setSaving(false); }
+  };
+
+  const handleSaveFineRates = async () => {
+    if (!dueDayOfMonth || !lateRentFine) { Alert.alert('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ'); return; }
+    setSaving(true);
+    try {
+      await settingsAPI.updateUtilityRates({
+        waterRatePerUnit: parseFloat(waterRate),
+        electricRatePerUnit: parseFloat(electricRate),
+        lateRentFine: parseFloat(lateRentFine),
+        dueDayOfMonth: parseInt(dueDayOfMonth, 10) || 10,
+      });
+      Alert.alert('สำเร็จ', 'บันทึกกำหนดวันชำระและค่าปรับเรียบร้อย');
+      setIsEditingFine(false);
     } catch (e: any) {
       Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ไม่สามารถบันทึกได้');
     } finally { setSaving(false); }
@@ -115,37 +138,81 @@ export default function AdminSettings() {
           <Text style={styles.cardTitle}>⚡ อัตราค่าน้ำ-ไฟ</Text>
           <View style={styles.field}>
             <Text style={styles.label}>ค่าน้ำประปา (฿/หน่วย)</Text>
-            <TextInput style={styles.input} value={waterRate} onChangeText={setWaterRate} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#9CA3AF" />
+            <TextInput
+              style={[styles.input, !isEditingUtility && styles.inputDisabled]}
+              value={waterRate}
+              onChangeText={setWaterRate}
+              keyboardType="numeric"
+              editable={isEditingUtility}
+              placeholder="0.00"
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
           <View style={styles.field}>
             <Text style={styles.label}>ค่าไฟฟ้า (฿/หน่วย)</Text>
-            <TextInput style={styles.input} value={electricRate} onChangeText={setElectricRate} keyboardType="numeric" placeholder="0.00" placeholderTextColor="#9CA3AF" />
+            <TextInput
+              style={[styles.input, !isEditingUtility && styles.inputDisabled]}
+              value={electricRate}
+              onChangeText={setElectricRate}
+              keyboardType="numeric"
+              editable={isEditingUtility}
+              placeholder="0.00"
+              placeholderTextColor="#9CA3AF"
+            />
           </View>
-          <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSaveRates} disabled={saving}>
-            <Text style={styles.saveTxt}>{saving ? 'กำลังบันทึก...' : 'บันทึกตั้งค่า'}</Text>
-          </TouchableOpacity>
+          {!isEditingUtility ? (
+            <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditingUtility(true)}>
+              <Text style={styles.editBtnTxt}>แก้ไข</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.confirmBtn, saving && { opacity: 0.6 }]} onPress={handleSaveUtilityRates} disabled={saving}>
+              <Text style={styles.confirmBtnTxt}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Late Fine Card */}
+        {/* Late Fine & Due Days Card */}
         <View style={[styles.card, { marginTop: 12 }]}>
-          <Text style={styles.cardTitle}>⚠️ ค่าปรับจ่ายช้า</Text>
+          <Text style={styles.cardTitle}>⚠️ กำหนดวันชำระและค่าปรับ</Text>
+          <View style={styles.field}>
+            <Text style={styles.label}>กำหนดชำระทุกวันที่ / ภายใน (วัน)</Text>
+            <TextInput
+              style={[styles.input, !isEditingFine && styles.inputDisabled]}
+              value={dueDayOfMonth}
+              onChangeText={setDueDayOfMonth}
+              keyboardType="numeric"
+              editable={isEditingFine}
+              placeholder="10"
+              placeholderTextColor="#9CA3AF"
+            />
+            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+              กำหนดให้ชำระได้ตั้งแต่วันที่ 1 ถึงวันที่ {dueDayOfMonth || '10'} ของเดือน
+            </Text>
+          </View>
           <View style={styles.field}>
             <Text style={styles.label}>ค่าปรับจ่ายค่าเช่าล่าช้า (฿/วัน)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, !isEditingFine && styles.inputDisabled]}
               value={lateRentFine}
               onChangeText={setLateRentFine}
               keyboardType="numeric"
+              editable={isEditingFine}
               placeholder="100"
               placeholderTextColor="#9CA3AF"
             />
             <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
-              ระบบจะคำนวณค่าปรับสะสมแบบ: จำนวนวันที่เลยกำหนด × ฿{lateRentFine || '100'}
+              หากเลยวันที่ {dueDayOfMonth || '10'} ระบบจะคำนวณค่าปรับสะสม: จำนวนวันที่เลยกำหนด × ฿{lateRentFine || '100'}
             </Text>
           </View>
-          <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSaveRates} disabled={saving}>
-            <Text style={styles.saveTxt}>{saving ? 'กำลังบันทึก...' : 'บันทึกตั้งค่า'}</Text>
-          </TouchableOpacity>
+          {!isEditingFine ? (
+            <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditingFine(true)}>
+              <Text style={styles.editBtnTxt}>แก้ไข</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.confirmBtn, saving && { opacity: 0.6 }]} onPress={handleSaveFineRates} disabled={saving}>
+              <Text style={styles.confirmBtnTxt}>{saving ? 'กำลังบันทึก...' : 'บันทึก'}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Space Size Setting Card */}

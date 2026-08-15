@@ -94,8 +94,8 @@ export const usersAPI = {
   resetPassword: (id: number, data: any) => api.post(`/users/${id}/reset-password`, data),
   createTenant: (data: any | FormData) => {
     const isFormData = data instanceof FormData;
-    return api.post('/users/create-tenant', data, {
-      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    return api.post('/users', data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
     });
   },
   uploadProfileImage: (id: number, formData: FormData) => 
@@ -149,7 +149,15 @@ export const contractsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 60000,
     }),
-  terminate: (id: number) => api.post(`/contracts/${id}/terminate`),
+  cancelRequest: (id: number, data: any) => api.post(`/contracts/${id}/request-termination`, data),
+  getCancellationRequests: () => api.get('/contracts/cancellations'),
+  updateCancellationStatus: (id: number, status: string) => {
+    if (status === 'APPROVED') {
+      return api.post(`/contracts/${id}/terminate`);
+    } else {
+      return api.post(`/contracts/${id}/reject-termination`);
+    }
+  },
 };
 
 // ─── Maintenance ────────────────────────────────────────
@@ -183,26 +191,15 @@ export const settingsAPI = {
   update: (settings: any) => api.put('/settings', { settings }),
 };
 
-// ─── Dishware ───────────────────────────────────────────
-export const dishwareAPI = {
-  getAll: (params?: any) => api.get('/dishware', { params }),
-  create: (data: any) => api.post('/dishware', data),
-  delete: (id: number) => api.delete(`/dishware/${id}`),
-  getSummary: (params?: any) => api.get('/dishware/summary', { params }),
-  approve: (id: number) => api.patch(`/dishware/${id}/approve`),
-  reject: (id: number, data: any) => api.patch(`/dishware/${id}/reject`, data),
-};
-
-export const dishwareTypeAPI = {
-  getAll: (params?: any) => api.get('/dishware-types', { params }),
-  create: (data: any) => api.post('/dishware-types', data),
-  update: (id: number, data: any) => api.patch(`/dishware-types/${id}`, data),
-  delete: (id: number) => api.delete(`/dishware-types/${id}`),
-};
 
 // ─── Shop Types ───────────────────────────────────────
 export const shopTypesAPI = {
   getAll: () => api.get('/shop-types'),
+};
+
+// ─── Food Courts ──────────────────────────────────────
+export const foodCourtsAPI = {
+  getAll: () => api.get('/food-courts'),
 };
 
 export default api;

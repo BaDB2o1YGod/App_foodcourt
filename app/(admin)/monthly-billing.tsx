@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { billsAPI } from '../../services/api';
+import { billsAPI, settingsAPI } from '../../services/api';
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -35,18 +35,32 @@ export default function MonthlyBilling() {
   const [billData, setBillData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [dueDateStr, setDueDateStr] = useState('');
+  const [dueDay, setDueDay] = useState(10);
 
-  // Calculate default due date based on selected billing month (5th of next month)
+  // Fetch configured due day of month from settings
+  useEffect(() => {
+    settingsAPI.getUtilityRates()
+      .then((res) => {
+        const rates = res.data.data || {};
+        const d = parseInt(rates.dueDayOfMonth || rates.paymentDueDays, 10);
+        if (d && !isNaN(d) && d > 0 && d <= 31) {
+          setDueDay(d);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Calculate default due date based on selected billing month and dueDay setting (default 10th of next month)
   useEffect(() => {
     if (billingMonth) {
       const d = billingMonth.dateObj;
-      const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 5);
+      const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, dueDay);
       const y = nextMonth.getFullYear();
       const m = String(nextMonth.getMonth() + 1).padStart(2, '0');
       const dd = String(nextMonth.getDate()).padStart(2, '0');
       setDueDateStr(`${y}-${m}-${dd}`);
     }
-  }, [billingMonth]);
+  }, [billingMonth, dueDay]);
 
   // Fetch bill breakdown
   const calculateBill = async () => {
@@ -207,7 +221,7 @@ export default function MonthlyBilling() {
             {/* Config before submt */}
             <View style={s.section}>
               <Text style={s.sectionLabel}>กำหนดวันครบกำหนดชำระ</Text>
-              <Text style={s.hint}>รูปแบบ: YYYY-MM-DD เช่น 2026-06-05</Text>
+              <Text style={s.hint}>รูปแบบ: YYYY-MM-DD เช่น 2026-06-10</Text>
               <TextInput
                 style={s.input}
                 value={dueDateStr}

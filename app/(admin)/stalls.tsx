@@ -177,7 +177,7 @@ export default function AdminStalls() {
               onPress={() => handlePress(st)}
             >
               <Text style={styles.slotNum}>{st.slot_number}</Text>
-              {st.slot_size ? <Text style={styles.slotSize}>{st.slot_size}</Text> : null}
+              {st.slot_size ? <Text style={styles.slotSize}>{st.slot_size} ตร.ม.</Text> : null}
               <Text style={styles.slotRent}>฿{Number(st.rent || 0).toLocaleString()}</Text>
               {isOccupied && tenant ? (
                 <Text style={styles.slotTenant} numberOfLines={1}>

@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator, Alert, FlatList, Image, KeyboardAvoidingView,
-  Modal, Platform, ScrollView, StyleSheet, Text, TextInput,
-  TouchableOpacity, View, Keyboard, TouchableWithoutFeedback
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { contractsAPI, usersAPI } from '../../services/api';
+import * as ImagePicker from 'expo-image-picker';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator, Alert, FlatList, Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal, Platform, ScrollView, StyleSheet, Text, TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
+} from 'react-native';
+import { contractsAPI, usersAPI, stallsAPI, foodCourtsAPI, shopTypesAPI } from '../../services/api';
 
 // ─── ข้อมูลที่อยู่ (จังหวัด → อำเภอ → ตำบล) ─────────
 const ADDRESS_DATA: Record<string, Record<string, string[]>> = {
@@ -53,20 +57,30 @@ export default function CreateContractScreen() {
   const [loading, setLoading] = useState(false);
   const [tenants, setTenants] = useState<any[]>([]);
 
+  // Manual Slot Selection States
+  const [foodCourts, setFoodCourts] = useState<any[]>([]);
+  const [selectedFoodCourtId, setSelectedFoodCourtId] = useState<number | null>(null);
+  const [selectedFoodCourtName, setSelectedFoodCourtName] = useState<string>('');
+  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [formSlotId, setFormSlotId] = useState<number | null>(slot_id ? Number(slot_id) : null);
+  const [formSlotNumber, setFormSlotNumber] = useState<string>(slot_number ? String(slot_number) : '');
+
   // Form Fields
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
+  const [menuType, setMenuType] = useState<string>('');
+  const [shopTypes, setShopTypes] = useState<any[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [deposit, setDeposit] = useState('');
   const [idCard, setIdCard] = useState('');
   const [phone, setPhone] = useState('');
-  
+
   // Address Fields
   const [addressLine, setAddressLine] = useState('');
   const [province, setProvince] = useState('');
   const [district, setDistrict] = useState('');
   const [subdistrict, setSubdistrict] = useState('');
-  
+
   const [receiptNumber, setReceiptNumber] = useState('');
   const [receiptDate, setReceiptDate] = useState('');
 
@@ -82,7 +96,7 @@ export default function CreateContractScreen() {
   const [genDropdownTitle, setGenDropdownTitle] = useState('');
   const [genDropdownOptions, setGenDropdownOptions] = useState<string[]>([]);
   const [genDropdownSearch, setGenDropdownSearch] = useState('');
-  const [genDropdownOnSelect, setGenDropdownOnSelect] = useState<(val: string) => void>(() => {});
+  const [genDropdownOnSelect, setGenDropdownOnSelect] = useState<(val: string) => void>(() => { });
 
   // DatePicker Modal
   const [showDatePicker, setShowDatePicker] = useState<string | null>(null);
@@ -91,7 +105,7 @@ export default function CreateContractScreen() {
     if (Platform.OS === 'android') {
       setShowDatePicker(null);
     }
-    
+
     if (event.type === 'dismissed') {
       setShowDatePicker(null);
       return;
@@ -100,11 +114,11 @@ export default function CreateContractScreen() {
     if (selectedDate && showDatePicker) {
       const pad = (n: number) => n.toString().padStart(2, '0');
       const formatted = `${pad(selectedDate.getDate())}/${pad(selectedDate.getMonth() + 1)}/${selectedDate.getFullYear()}`;
-      
+
       if (showDatePicker === 'start') setStartDate(formatted);
       else if (showDatePicker === 'end') setEndDate(formatted);
       else if (showDatePicker === 'receipt') setReceiptDate(formatted);
-      
+
       if (Platform.OS === 'ios') {
         setShowDatePicker(null);
       }
@@ -124,21 +138,68 @@ export default function CreateContractScreen() {
     // โหลดรายชื่อผู้เช่าทั้งหมด
     usersAPI.getAll({ role: 'TENANT' })
       .then((res) => {
-        // กรองเฉพาะผู้เช่าที่ทำงานอยู่ และ "ยังไม่มีสัญญาเช่า"
-        const availableTenants = (res.data.data || []).filter((t: any) => t.is_active && !t.stall);
+        const availableTenants = (res.data.data || []).filter((t: any) => (t.is_active !== false) && !t.stall);
         setTenants(availableTenants);
       })
       .catch((e) => console.error('Failed to load tenants', e));
+
+    // Load shop types
+    shopTypesAPI.getAll()
+      .then((res) => setShopTypes(res.data.data || []))
+      .catch((e) => console.error('Failed to load shop types', e));
 
     // Default dates (DD/MM/YYYY)
     const today = new Date();
     const nextYear = new Date();
     nextYear.setFullYear(today.getFullYear() + 1);
-    
+
     const pad = (n: number) => n.toString().padStart(2, '0');
     setStartDate(`${pad(today.getDate())}/${pad(today.getMonth() + 1)}/${today.getFullYear()}`);
     setEndDate(`${pad(nextYear.getDate())}/${pad(nextYear.getMonth() + 1)}/${nextYear.getFullYear()}`);
+
+    // Load food courts if no slot_id provided
+    if (!slot_id) {
+      foodCourtsAPI.getAll()
+        .then((res) => {
+          setFoodCourts(res.data.data || []);
+        })
+        .catch((e) => console.error('Failed to load food courts', e));
+    }
   }, []);
+
+  // Fetch available slots when food court changes
+  useEffect(() => {
+    if (selectedFoodCourtId) {
+      stallsAPI.getAll({ food_court_id: selectedFoodCourtId, status: 'VACANT' })
+        .then((res) => {
+          setAvailableSlots(res.data.data || []);
+        })
+        .catch((e) => console.error('Failed to load slots', e));
+    } else {
+      setAvailableSlots([]);
+    }
+    // Reset selected slot when food court changes (if not initially provided)
+    if (!slot_id) {
+      setFormSlotId(null);
+      setFormSlotNumber('');
+      setDeposit('');
+    }
+  }, [selectedFoodCourtId, slot_id]);
+
+  // Fetch deposit when slot changes
+  useEffect(() => {
+    // ดึงค่าเช่าของล็อกแล้วคูณ 3 เป็นเงินมัดจำ
+    if (formSlotId) {
+      stallsAPI.getById(formSlotId)
+        .then((res) => {
+          const slot = res.data.data;
+          if (slot?.rent) {
+            setDeposit((slot.rent * 3).toString());
+          }
+        })
+        .catch((e) => console.error('Failed to load stall info', e));
+    }
+  }, [formSlotId]);
 
   // ─── Image Pick / Camera ────────────────────────────────
   const pickFromGallery = async () => {
@@ -177,7 +238,7 @@ export default function CreateContractScreen() {
 
   const handleCreate = async () => {
     const missing = [];
-    if (!slot_id) missing.push('ข้อมูลล็อก (slot_id)');
+    if (!formSlotId) missing.push('ข้อมูลล็อก (Stall)');
     if (!selectedTenantId) missing.push('ผู้เช่า');
     if (!startDate) missing.push('วันที่เริ่มสัญญา');
     if (!endDate) missing.push('วันสิ้นสุดสัญญา');
@@ -200,15 +261,16 @@ export default function CreateContractScreen() {
       };
 
       const formData = new FormData();
-      formData.append('slot_id', slot_id as string);
+      formData.append('slot_id', formSlotId!.toString());
       formData.append('tenant_id', selectedTenantId!.toString());
       formData.append('startDate', formatDateToISO(startDate));
       formData.append('endDate', formatDateToISO(endDate));
-      
-      if (deposit) formData.append('securityDeposit', deposit);
+
+      if (menuType) formData.append('menuType', menuType);
+      if (deposit) formData.append('deposit_amount', deposit);
       if (idCard) formData.append('idCard', idCard);
       if (phone) formData.append('phone', phone);
-      
+
       // รวมที่อยู่เข้าด้วยกัน
       const fullAddress = `${addressLine || ''} ${subdistrict ? `ต.${subdistrict}` : ''} ${district ? `อ.${district}` : ''} ${province ? `จ.${province}` : ''}`.trim();
       if (fullAddress) formData.append('address', fullAddress);
@@ -240,7 +302,7 @@ export default function CreateContractScreen() {
       });
 
       await contractsAPI.create(formData);
-      
+
       Alert.alert('สำเร็จ', 'บันทึกสัญญาเช่าใหม่เรียบร้อยแล้ว', [
         { text: 'ตกลง', onPress: () => router.back() }
       ]);
@@ -252,14 +314,14 @@ export default function CreateContractScreen() {
   };
 
   const selectedTenant = tenants.find(t => t.user_id === selectedTenantId);
-  const tenantLabel = selectedTenant 
+  const tenantLabel = selectedTenant
     ? `${selectedTenant.first_name} ${selectedTenant.last_name || ''} (@${selectedTenant.username})`
     : '';
 
   const filteredTenants = dropdownSearch
-    ? tenants.filter(t => 
-        `${t.first_name} ${t.last_name} ${t.username}`.toLowerCase().includes(dropdownSearch.toLowerCase())
-      )
+    ? tenants.filter(t =>
+      `${t.first_name} ${t.last_name} ${t.username}`.toLowerCase().includes(dropdownSearch.toLowerCase())
+    )
     : tenants;
 
   // Helpers for Gen Dropdown
@@ -290,15 +352,57 @@ export default function CreateContractScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#374151" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>เพิ่มสัญญาเช่า (ล็อก {slot_number})</Text>
+          <Text style={styles.headerTitle}>เพิ่มสัญญาเช่า</Text>
           <View style={{ width: 36 }} />
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>เลือกผู้เช่า</Text>
-          
-          <TouchableOpacity 
-            style={styles.ddFieldRow} 
+          <Text style={styles.sectionLabel}>ข้อมูลล็อก (Stall)</Text>
+          {slot_id ? (
+            <View style={styles.ddFieldRow}>
+              <Text style={styles.ddFieldText}>กำลังสร้างสัญญาให้ล็อก: {slot_number}</Text>
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[styles.ddFieldRow, { marginBottom: 16 }]}
+                onPress={() => openGenDropdown('เลือกศูนย์อาหาร', foodCourts.map(f => f.name), (val) => {
+                  const fc = foodCourts.find(f => f.name === val);
+                  if (fc) {
+                    setSelectedFoodCourtId(fc.food_court_id);
+                    setSelectedFoodCourtName(fc.name);
+                  }
+                })}
+              >
+                <Text style={[styles.ddFieldText, !selectedFoodCourtName && { color: '#9CA3AF' }]}>
+                  {selectedFoodCourtName || 'เลือกศูนย์อาหาร'}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.ddFieldRow}
+                onPress={() => openGenDropdown('เลือกล็อก', availableSlots.map(s => s.slot_number), (val) => {
+                  const slot = availableSlots.find(s => s.slot_number === val);
+                  if (slot) {
+                    setFormSlotId(slot.slot_id);
+                    setFormSlotNumber(slot.slot_number);
+                  }
+                })}
+                disabled={!selectedFoodCourtId || availableSlots.length === 0}
+              >
+                <Text style={[styles.ddFieldText, (!formSlotNumber || availableSlots.length === 0) && { color: '#9CA3AF' }]}>
+                  {formSlotNumber || (availableSlots.length > 0 ? 'เลือกล็อกที่ต้องการเช่า' : (selectedFoodCourtId ? 'ไม่มีล็อกว่าง' : 'กรุณาเลือกศูนย์อาหารก่อน'))}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+            </>
+          )}
+
+          <Text style={[styles.sectionLabel, { marginTop: 24 }]}>เลือกผู้เช่า</Text>
+
+          <TouchableOpacity
+            style={styles.ddFieldRow}
             onPress={() => { setDropdownSearch(''); setDropdownVisible(true); }}
           >
             <Text style={[styles.ddFieldText, !selectedTenantId && { color: '#9CA3AF' }]}>
@@ -312,28 +416,41 @@ export default function CreateContractScreen() {
 
           <Text style={styles.sectionLabel}>ข้อมูลสัญญา</Text>
 
-          <DateDropdownField 
-            label="วันที่เริ่มสัญญา" 
-            value={startDate} 
-            placeholder="เลือกวันที่" 
-            onPress={() => setShowDatePicker('start')} 
+          <DateDropdownField
+            label="วันที่เริ่มสัญญา"
+            value={startDate}
+            placeholder="เลือกวันที่"
+            onPress={() => setShowDatePicker('start')}
           />
-          <DateDropdownField 
-            label="วันสิ้นสุดสัญญา" 
-            value={endDate} 
-            placeholder="เลือกวันที่" 
-            onPress={() => setShowDatePicker('end')} 
+          <DateDropdownField
+            label="วันสิ้นสุดสัญญา"
+            value={endDate}
+            placeholder="เลือกวันที่"
+            onPress={() => setShowDatePicker('end')}
           />
           <FieldRow label="เงินมัดจำ (บาท)" value={deposit} onChange={setDeposit} placeholder="เช่น 5000" keyboardType="numeric" />
 
-          <Text style={styles.sectionLabel}>ข้อมูลผู้เช่า (เลือกกรอก)</Text>
+          <Text style={[styles.sectionLabel, { marginTop: 24 }]}>หมวดหมู่ร้านค้า (ประเภทอาหาร)</Text>
+          <TouchableOpacity
+            style={styles.ddFieldRow}
+            onPress={() => openGenDropdown('เลือกหมวดหมู่ร้านค้า', shopTypes.map(s => s.type_name), (val) => {
+              setMenuType(val);
+            })}
+          >
+            <Text style={[styles.ddFieldText, !menuType && { color: '#9CA3AF' }]}>
+              {menuType || 'เลือกหมวดหมู่ (เช่น ของคาว, ขนม, น้ำหวาน)'}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Text style={[styles.sectionLabel, { marginTop: 24 }]}>ข้อมูลผู้เช่า (เลือกกรอก)</Text>
 
           <FieldRow label="รหัสบัตรประชาชน" value={idCard} onChange={setIdCard} placeholder="13 หลัก" keyboardType="numeric" maxLength={13} />
           <FieldRow label="เบอร์โทรศัพท์" value={phone} onChange={setPhone} placeholder="08x-xxx-xxxx" keyboardType="phone-pad" maxLength={10} />
-          
+
           <Text style={styles.sectionLabel}>ที่อยู่</Text>
           <FieldRow label="ที่อยู่ (บ้านเลขที่ ถนน)" value={addressLine} onChange={setAddressLine} placeholder="123 ม.1 ถ.จิระ" />
-          
+
           <DropdownField
             label="จังหวัด"
             value={province}
@@ -364,11 +481,11 @@ export default function CreateContractScreen() {
 
           <Text style={styles.sectionLabel}>การชำระเงิน</Text>
           <FieldRow label="เลขที่ใบเสร็จมัดจำ" value={receiptNumber} onChange={setReceiptNumber} placeholder="เลขที่ใบเสร็จ" keyboardType="numeric" />
-          <DateDropdownField 
-            label="วันที่ออกใบเสร็จ" 
-            value={receiptDate} 
-            placeholder="เลือกวันที่" 
-            onPress={() => setShowDatePicker('receipt')} 
+          <DateDropdownField
+            label="วันที่ออกใบเสร็จ"
+            value={receiptDate}
+            placeholder="เลือกวันที่"
+            onPress={() => setShowDatePicker('receipt')}
           />
 
           <Text style={styles.sectionLabel}>ภาพถ่ายสัญญา</Text>
@@ -434,12 +551,12 @@ export default function CreateContractScreen() {
                   data={filteredTenants}
                   keyExtractor={(item) => item.user_id.toString()}
                   renderItem={({ item }) => (
-                    <TouchableOpacity 
-                      style={styles.ddItem} 
+                    <TouchableOpacity
+                      style={styles.ddItem}
                       onPress={() => {
                         setSelectedTenantId(item.user_id);
                         setDropdownVisible(false);
-                        
+
                         // Autofill ALL data from tenant profile
                         if (item.phone && !phone) setPhone(item.phone);
                         if (item.address_line) setAddressLine(item.address_line);
@@ -509,8 +626,8 @@ export default function CreateContractScreen() {
         <DateTimePicker
           value={
             showDatePicker === 'start' ? parseToDateObj(startDate) :
-            showDatePicker === 'end' ? parseToDateObj(endDate) :
-            parseToDateObj(receiptDate)
+              showDatePicker === 'end' ? parseToDateObj(endDate) :
+                parseToDateObj(receiptDate)
           }
           mode="date"
           display="default"
@@ -566,8 +683,8 @@ function DropdownField({
   return (
     <View style={styles.fieldRow}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TouchableOpacity 
-        style={[styles.genDdFieldRow, disabled && { opacity: 0.5, backgroundColor: '#F3F4F6' }]} 
+      <TouchableOpacity
+        style={[styles.genDdFieldRow, disabled && { opacity: 0.5, backgroundColor: '#F3F4F6' }]}
         onPress={onPress}
         disabled={disabled}
       >
@@ -588,8 +705,8 @@ function DateDropdownField({
   return (
     <View style={styles.fieldRow}>
       <Text style={styles.fieldLabel}>{label}</Text>
-      <TouchableOpacity 
-        style={[styles.genDdFieldRow, disabled && { opacity: 0.5, backgroundColor: '#F3F4F6' }]} 
+      <TouchableOpacity
+        style={[styles.genDdFieldRow, disabled && { opacity: 0.5, backgroundColor: '#F3F4F6' }]}
         onPress={onPress}
         disabled={disabled}
       >
@@ -622,13 +739,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB',
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, color: '#1F2937',
   },
-  ddFieldRow: { 
+  ddFieldRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#7C3AED',
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8
   },
   ddFieldText: { fontSize: 15, color: '#1F2937', fontWeight: '600' },
-  
+
   genDdFieldRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB',
