@@ -347,7 +347,7 @@ export default function ExecutiveRepairs() {
             </View>
             {req.category && <Text style={styles.meta}>🏷 {req.category}</Text>}
             <Text style={styles.meta}>
-              📅 {req.requested_at || req.created_at ? new Date(req.requested_at || req.created_at).toLocaleDateString('th-TH') : '-'}
+               {req.requested_at || req.created_at ? new Date(req.requested_at || req.created_at).toLocaleDateString('th-TH') : '-'}
             </Text>
             <Text style={styles.meta}>
               👤 {req.tenant?.first_name || 'ผู้เช่า'} — ล็อก {req.slot?.slot_number || '-'}

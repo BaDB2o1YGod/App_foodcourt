@@ -47,7 +47,7 @@ export default function Jobs() {
             </View>
             {job.category && <Text style={styles.meta}>🏷 {job.category}</Text>}
             <Text style={styles.meta}>📍 ล็อก {job.slot?.slot_number}</Text>
-            <Text style={styles.meta}>📅 {new Date(job.requested_at).toLocaleDateString('th-TH')}</Text>
+            <Text style={styles.meta}> {new Date(job.requested_at).toLocaleDateString('th-TH')}</Text>
             <Text style={styles.viewBtn}>ดูรายละเอียด →</Text>
           </TouchableOpacity>
         ))}

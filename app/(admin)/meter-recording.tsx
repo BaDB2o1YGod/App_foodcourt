@@ -177,7 +177,6 @@ export default function MeterRecording() {
           {/* ── Water ── */}
           <View style={s.meterCard}>
             <View style={s.meterHeader}>
-              <Text style={s.meterIcon}>💧</Text>
               <View>
                 <Text style={s.meterTitle}>มิเตอร์น้ำประปา</Text>
                 <Text style={s.meterSubtitle}>7 หลัก · หน่วย: ลูกบาศก์เมตร (ม³)</Text>
@@ -186,7 +185,7 @@ export default function MeterRecording() {
 
             {/* Prev reading chip */}
             <View style={s.prevRow}>
-              <Text style={s.prevLabel}>📌 เลขมิเตอร์ครั้งก่อน:</Text>
+              <Text style={s.prevLabel}> เลขมิเตอร์ครั้งก่อน:</Text>
               <Text style={s.prevValue}>
                 {loadingPrev
                   ? 'กำลังโหลด...'
@@ -230,7 +229,6 @@ export default function MeterRecording() {
           {/* ── Electricity ── */}
           <View style={[s.meterCard, s.meterCardElectric]}>
             <View style={s.meterHeader}>
-              <Text style={s.meterIcon}>⚡</Text>
               <View>
                 <Text style={s.meterTitle}>มิเตอร์ไฟฟ้า</Text>
                 <Text style={[s.meterSubtitle, { color: '#92400E' }]}>5 หลัก · หน่วย: กิโลวัตต์-ชั่วโมง (kWh)</Text>
@@ -239,7 +237,7 @@ export default function MeterRecording() {
 
             {/* Prev reading chip */}
             <View style={[s.prevRow, s.prevRowElectric]}>
-              <Text style={[s.prevLabel, { color: '#92400E' }]}>📌 เลขมิเตอร์ครั้งก่อน:</Text>
+              <Text style={[s.prevLabel, { color: '#92400E' }]}> เลขมิเตอร์ครั้งก่อน:</Text>
               <Text style={[s.prevValue, { color: '#78350F' }]}>
                 {loadingPrev
                   ? 'กำลังโหลด...'
@@ -285,11 +283,11 @@ export default function MeterRecording() {
         {(waterReading || electricReading) && selected && (
           <View style={s.summaryBox}>
             <Text style={s.summaryTitle}>สรุปการบันทึก</Text>
-            <Text style={s.summaryRow}>📅 บิลเดือน: <Text style={s.summaryVal}>{billingMonth.label}</Text></Text>
-            <Text style={s.summaryRow}>🏪 ล็อก: <Text style={s.summaryVal}>{selected.slot_number}</Text></Text>
+            <Text style={s.summaryRow}>บิลเดือน: <Text style={s.summaryVal}>{billingMonth.label}</Text></Text>
+            <Text style={s.summaryRow}>ล็อก: <Text style={s.summaryVal}>{selected.slot_number}</Text></Text>
             {waterReading && (
               <>
-                <Text style={s.summaryRow}>💧 เลขมิเตอร์น้ำ: <Text style={s.summaryVal}>{String(waterReading).padStart(7, '0')}</Text></Text>
+                <Text style={s.summaryRow}>เลขมิเตอร์น้ำ: <Text style={s.summaryVal}>{String(waterReading).padStart(7, '0')}</Text></Text>
                 {prevWater !== null && (
                   <Text style={s.summaryRow}>   ↳ ใช้ไป: <Text style={s.summaryVal}>{Math.max(0, parseInt(waterReading) - prevWater).toLocaleString()} ม³</Text></Text>
                 )}
@@ -297,7 +295,7 @@ export default function MeterRecording() {
             )}
             {electricReading && (
               <>
-                <Text style={s.summaryRow}>⚡ เลขมิเตอร์ไฟ: <Text style={s.summaryVal}>{String(electricReading).padStart(5, '0')}</Text></Text>
+                <Text style={s.summaryRow}>เลขมิเตอร์ไฟ: <Text style={s.summaryVal}>{String(electricReading).padStart(5, '0')}</Text></Text>
                 {prevElectric !== null && (
                   <Text style={s.summaryRow}>   ↳ ใช้ไป: <Text style={s.summaryVal}>{Math.max(0, parseInt(electricReading) - prevElectric).toLocaleString()} kWh</Text></Text>
                 )}

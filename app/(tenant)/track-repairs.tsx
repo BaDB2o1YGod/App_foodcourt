@@ -40,7 +40,7 @@ export default function TrackRepairs() {
               <StatusBadge status={req.status} size="sm" />
             </View>
             {req.category && <Text style={styles.meta}>🏷 {req.category}</Text>}
-            <Text style={styles.meta}>📅 {new Date(req.requested_at).toLocaleDateString('th-TH')}</Text>
+            <Text style={styles.meta}> {new Date(req.requested_at).toLocaleDateString('th-TH')}</Text>
             {req.updates && req.updates.length > 0 && (
               <View style={styles.timeline}>
                 <Text style={styles.timelineTitle}>อัปเดตล่าสุด:</Text>
@@ -76,7 +76,7 @@ export default function TrackRepairs() {
               </View>
               {selectedJob?.category && <Text style={styles.meta}>🏷 {selectedJob.category}</Text>}
               <Text style={styles.meta}>📍 ล็อก {selectedJob?.slot?.slot_number || '-'}</Text>
-              <Text style={styles.meta}>📅 แจ้งเมื่อ {selectedJob?.requested_at ? new Date(selectedJob.requested_at).toLocaleDateString('th-TH') : ''}</Text>
+              <Text style={styles.meta}> แจ้งเมื่อ {selectedJob?.requested_at ? new Date(selectedJob.requested_at).toLocaleDateString('th-TH') : ''}</Text>
               {selectedJob?.description && <Text style={styles.modalDesc}>{selectedJob.description}</Text>}
             </View>
 

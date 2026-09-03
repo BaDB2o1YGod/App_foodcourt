@@ -1,4 +1,4 @@
-﻿# AGENTS.md — Project-App Rules
+# AGENTS.md — Project-App Rules
 
 > กฎเหล่านี้มีผลกับทุก AI agent ที่ทำงานในโปรเจกต์นี้
 
@@ -10,8 +10,8 @@
 
 | Layer | Technology |
 |---|---|
-| Framework | Expo SDK ~54 + React Native 0.81 |
-| Routing | Expo Router v6 (file-based routing) |
+| Framework | Expo SDK ~57 + React Native 0.86 |
+| Routing | Expo Router v57 (file-based routing) |
 | Language | TypeScript (strict) |
 | State Management | Zustand v5 |
 | HTTP Client | Axios (ผ่าน `services/api.ts`) |

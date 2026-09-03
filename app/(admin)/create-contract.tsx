@@ -14,43 +14,9 @@ import {
 } from 'react-native';
 import { contractsAPI, usersAPI, stallsAPI, foodCourtsAPI, shopTypesAPI } from '../../services/api';
 
-// ─── ข้อมูลที่อยู่ (จังหวัด → อำเภอ → ตำบล) ─────────
-const ADDRESS_DATA: Record<string, Record<string, string[]>> = {
-  'บุรีรัมย์': {
-    'เมืองบุรีรัมย์': ['ในเมือง', 'อิสาณ', 'เสม็ด', 'บ้านบัว', 'สะแกโพรง', 'สวายจีก', 'บ้านยาง', 'ลุมปุ๊ก', 'ชุมเห็ด', 'หลักเขต', 'สองห้อง', 'บัวทอง', 'ชุมแสง', 'หนองตาด', 'พระครู', 'ถลุงเหล็ก', 'กระสัง', 'กลันทา', 'เมืองฝาง'],
-    'คูเมือง': ['คูเมือง', 'ปะเคียบ', 'บ้านแพ', 'พรสำราญ', 'หินเหล็กไฟ', 'ตูมใหญ่', 'หนองขมาร'],
-    'กระสัง': ['กระสัง', 'ลำดวน', 'สองชั้น', 'สูงเนิน', 'หนองเต็ง', 'เมืองไผ่', 'ชุมแสง', 'บ้านปรือ', 'ห้วยสำราญ', 'กันทรารมย์', 'ศรีภูมิ'],
-    'นางรอง': ['นางรอง', 'สะเดา', 'ชุมแสง', 'หนองโบสถ์', 'หนองกง', 'ถนนหัก', 'หัวถนน', 'ทรัพย์พระยา', 'หนองไทร', 'ก้านเหลือง', 'บ้านสิงห์', 'ลำไทรโยง', 'ทุ่งแสงทอง', 'หนองยายพิมพ์', 'ชุมแสง'],
-    'หนองกี่': ['หนองกี่', 'เย้ยปราสาท', 'เมืองไผ่', 'ดอนอะราง', 'โคกสูง', 'ทุ่งกระตาดพัฒนา', 'ทุ่งกระเต็น', 'ท่าโพธิ์ชัย', 'โคกสว่าง', 'บุกระสัง'],
-    'ลำปลายมาศ': ['ลำปลายมาศ', 'หนองคู', 'แสลงพัน', 'ทะเมนชัย', 'ตลาดโพธิ์', 'หนองกะทิง', 'โคกกลาง', 'โคกสะอาด', 'เมืองแฝก', 'บ้านยาง', 'ผไทรินทร์', 'โคกล่าม', 'หินโคน', 'หนองบัวโคก', 'บุโพธิ์', 'หนองโดน'],
-    'ประโคนชัย': ['ประโคนชัย', 'แสลงโทน', 'บ้านไทร', 'ละเวี้ย', 'จรเข้มาก', 'ปังกู', 'โคกย่าง', 'โคกม้า', 'ไพศาล', 'ตะโกตาพิ', 'เขาคอก', 'หนองบอน', 'โคกตูม', 'ประทัดบุ', 'สี่เหลี่ยม', 'โคกมะขาม'],
-    'พุทไธสง': ['พุทไธสง', 'มะเฟือง', 'บ้านจาน', 'บ้านเป้า', 'บ้านแวง', 'บ้านยาง', 'หายโศก'],
-    'สตึก': ['สตึก', 'นิคม', 'ทุ่งวัง', 'เมืองแก', 'หนองใหญ่', 'ร่อนทอง', 'ดอนมนต์', 'ชุมแสง', 'ท่าม่วง', 'สะแก', 'สนามชัย', 'กระสัง'],
-    'ปะคำ': ['ปะคำ', 'ไทยเจริญ', 'หนองบัว', 'โคกมะม่วง', 'หูทำนบ'],
-    'แคนดง': ['แคนดง', 'ดงพลอง', 'สระบัว', 'หัวฝาย'],
-    'บ้านกรวด': ['บ้านกรวด', 'โนนเจริญ', 'หนองไม้งาม', 'ปราสาท', 'สายตะกู', 'หินลาด', 'บึงเจริญ', 'จันทบเพชร', 'เขาดินเหนือ'],
-    'ชำนิ': ['ชำนิ', 'หนองปล่อง', 'เมืองยาง', 'ช่อผกา', 'ละลวด', 'โคกสนวน'],
-    'บ้านด่าน': ['บ้านด่าน', 'ปราสาท', 'วังเหนือ', 'โนนขวาง'],
-    'โนนสุวรรณ': ['โนนสุวรรณ', 'ทุ่งจังหัน', 'โกรกแก้ว', 'ดงอีจาน', 'โนนสุวรรณ'],
-    'โนนดินแดง': ['โนนดินแดง', 'สำโรงใหม่', 'ลำนางรอง'],
-    'เฉลิมพระเกียรติ': ['เจริญสุข', 'ตาเป๊ก', 'อีสานเขต', 'ถาวร', 'ยายแย้มวัฒนา'],
-    'พลับพลาชัย': ['พลับพลาชัย', 'สะเดา', 'จันดุม', 'ป่าชัน', 'สำโรง'],
-    'ห้วยราช': ['ห้วยราช', 'สามแวง', 'ตาเสา', 'บ้านตะโก', 'สนวน', 'โคกเหล็ก', 'เมืองโพธิ์', 'ห้วยราชา'],
-    'บ้านใหม่ไชยพจน์': ['หนองแวง', 'ทองหลาง', 'แดงใหญ่', 'กู่สวนแตง', 'หนองเยือง'],
-    'หนองหงส์': ['หนองหงส์', 'สระแก้ว', 'ห้วยหิน', 'ไทยสามัคคี', 'สระทอง', 'เสาเดียว', 'เมืองฝ้าย'],
-  },
-  'นครราชสีมา': {
-    'เมืองนครราชสีมา': ['ในเมือง', 'โพธิ์กลาง', 'หนองจะบก', 'โคกสูง', 'หนองไผ่ล้อม', 'หมื่นไวย', 'พลกรัง', 'หัวทะเล', 'บ้านเกาะ', 'บ้านใหม่', 'พุดซา', 'จอหอ', 'ตลาด', 'หนองบัวศาลา'],
-    'ปากช่อง': ['ปากช่อง', 'กลางดง', 'จันทึก', 'วังกะทะ', 'หมูสี', 'หนองสาหร่าย', 'คลองม่วง', 'ขนงพระ'],
-    'พิมาย': ['ในเมือง', 'สัมฤทธิ์', 'โบสถ์', 'กระเบื้องใหญ่', 'ท่าหลวง', 'รังกาใหญ่', 'ชีวาน', 'นิคมสร้างตนเอง', 'กระชอน', 'ธารละหลอด', 'หนองระเวียง', 'ดงใหญ่'],
-  },
-  'สุรินทร์': {
-    'เมืองสุรินทร์': ['ในเมือง', 'ตั้งใจ', 'เพี้ยราม', 'นาดี', 'ท่าสว่าง', 'สลักได', 'ตาอ็อง', 'สำโรง', 'แกใหญ่', 'นอกเมือง', 'คอโค', 'สวาย', 'เฉนียง', 'เทนมีย์', 'บุฤาษี', 'ทุ่งกุลา', 'หนองบัว', 'กาเกาะ', 'แสลงพันธ์'],
-    'ปราสาท': ['กังแอน', 'ทมอ', 'ไพล', 'ปรือ', 'ทุ่งมน', 'ตาเบา', 'หนองใหญ่', 'โคกยาง', 'โคกสะอาด', 'บ้านไทร', 'โชคนาสาม', 'เชื้อเพลิง', 'ปราสาททนง', 'ตานี', 'บ้านพลวง', 'กันตวจระมวล', 'สมุด', 'ประทัดบุ'],
-  },
-};
+import { ADDRESS_DATA } from '../../constants/AddressData';
 
-const PROVINCES = Object.keys(ADDRESS_DATA);
+const PROVINCES = Object.keys(ADDRESS_DATA).sort((a, b) => a.localeCompare(b, 'th'));
 
 export default function CreateContractScreen() {
   const { slot_id, slot_number } = useLocalSearchParams();
@@ -210,11 +176,11 @@ export default function CreateContractScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
+      allowsMultipleSelection: false,
       quality: 0.7,
     });
     if (!result.canceled) {
-      setContractImages(prev => [...prev, ...result.assets]);
+      setContractImages(result.assets);
     }
   };
 
@@ -228,7 +194,7 @@ export default function CreateContractScreen() {
       quality: 0.7,
     });
     if (!result.canceled) {
-      setContractImages(prev => [...prev, ...result.assets]);
+      setContractImages(result.assets);
     }
   };
 
@@ -278,14 +244,15 @@ export default function CreateContractScreen() {
       if (receiptNumber) formData.append('receiptNumber', receiptNumber);
       if (receiptDate) formData.append('receiptDate', formatDateToISO(receiptDate));
 
-      // Append contract images
-      contractImages.forEach((asset, i) => {
+      // Append contract images (single file)
+      if (contractImages.length > 0) {
+        const asset = contractImages[0];
         let fileName = asset.fileName;
         let mimeType = asset.mimeType;
 
         if (!fileName) {
           const ext = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
-          fileName = `contract_${i}.${ext}`;
+          fileName = `contract_0.${ext}`;
         }
         if (!mimeType) {
           const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
@@ -294,12 +261,12 @@ export default function CreateContractScreen() {
           else mimeType = 'image/jpeg';
         }
 
-        formData.append('contractImages', {
+        formData.append('contractFile', {
           uri: asset.uri,
           type: mimeType,
           name: fileName,
         } as any);
-      });
+      }
 
       await contractsAPI.create(formData);
 
@@ -325,8 +292,12 @@ export default function CreateContractScreen() {
     : tenants;
 
   // Helpers for Gen Dropdown
-  const districtOptions = province && ADDRESS_DATA[province] ? Object.keys(ADDRESS_DATA[province]) : [];
-  const subdistrictOptions = province && district && ADDRESS_DATA[province][district] ? ADDRESS_DATA[province][district] : [];
+  const districtOptions = ADDRESS_DATA[province] 
+    ? Object.keys(ADDRESS_DATA[province]).sort((a, b) => a.localeCompare(b, 'th')) 
+    : [];
+  const subdistrictOptions = ADDRESS_DATA[province]?.[district] 
+    ? [...ADDRESS_DATA[province][district]].sort((a, b) => a.localeCompare(b, 'th')) 
+    : [];
 
   const openGenDropdown = (title: string, options: string[], onSelect: (val: string) => void) => {
     setGenDropdownTitle(title);
@@ -621,18 +592,53 @@ export default function CreateContractScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* DatePicker */}
+      {/* DatePicker Modal */}
       {showDatePicker && (
-        <DateTimePicker
-          value={
-            showDatePicker === 'start' ? parseToDateObj(startDate) :
-              showDatePicker === 'end' ? parseToDateObj(endDate) :
-                parseToDateObj(receiptDate)
-          }
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
+        Platform.OS === 'android' ? (
+          <DateTimePicker
+            value={
+              showDatePicker === 'start' ? parseToDateObj(startDate) :
+                showDatePicker === 'end' ? parseToDateObj(endDate) :
+                  parseToDateObj(receiptDate)
+            }
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        ) : (
+          <Modal transparent animationType="fade" visible={!!showDatePicker}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 20, width: '90%', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, elevation: 5 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1F2937' }}>เลือกวันที่</Text>
+                  <TouchableOpacity onPress={() => setShowDatePicker(null)}>
+                    <Ionicons name="close" size={24} color="#374151" />
+                  </TouchableOpacity>
+                </View>
+                
+                <DateTimePicker
+                  value={
+                    showDatePicker === 'start' ? parseToDateObj(startDate) :
+                      showDatePicker === 'end' ? parseToDateObj(endDate) :
+                        parseToDateObj(receiptDate)
+                  }
+                  mode="date"
+                  display="inline"
+                  onChange={handleDateChange}
+                  themeVariant="light"
+                  style={{ backgroundColor: '#fff' }}
+                />
+                
+                <TouchableOpacity
+                  style={{ backgroundColor: '#7C3AED', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 15 }}
+                  onPress={() => setShowDatePicker(null)}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>ตกลง</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )
       )}
 
     </KeyboardAvoidingView>

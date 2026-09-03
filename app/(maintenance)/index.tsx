@@ -95,7 +95,7 @@ export default function MaintenanceDashboard() {
                 <StatusBadge status={job.status} size="sm" />
               </View>
               {job.category && <Text style={styles.jobCat}>🏷 {job.category}</Text>}
-              <Text style={styles.jobDate}>📍 ล็อก {job.slot?.slot_number || '-'} • 📅 {new Date(job.requested_at).toLocaleDateString('th-TH')}</Text>
+              <Text style={styles.jobDate}>📍 ล็อก {job.slot?.slot_number || '-'} •  {new Date(job.requested_at).toLocaleDateString('th-TH')}</Text>
             </TouchableOpacity>
           ))
         )}

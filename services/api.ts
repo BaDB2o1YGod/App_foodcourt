@@ -158,6 +158,7 @@ export const contractsAPI = {
       return api.post(`/contracts/${id}/reject-termination`);
     }
   },
+  terminate: (id: number) => api.post(`/contracts/${id}/terminate`),
 };
 
 // ─── Maintenance ────────────────────────────────────────

@@ -83,6 +83,34 @@ export default function AdminTenants() {
     ]);
   };
 
+  const handleTerminateContract = (contractId: number, contractNumber: string) => {
+    Alert.alert(
+      'ยกเลิกสัญญาเช่า',
+      `คุณต้องการยกเลิกสัญญา #${contractNumber} หรือไม่?\n\nการกระทำนี้จะสิ้นสุดสัญญาเช่าและปลดล็อกพื้นที่`,
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ยืนยันยกเลิกสัญญา',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await contractsAPI.terminate(contractId);
+              Alert.alert('สำเร็จ', `ยกเลิกสัญญา #${contractNumber} เรียบร้อยแล้ว`);
+              setSelected(null);
+              setTenantContracts([]);
+              await fetchData();
+            } catch (e: any) {
+              Alert.alert('ผิดพลาด', e?.response?.data?.message || 'ไม่สามารถยกเลิกสัญญาได้');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleDelete = (id: number, name: string) => {
     Alert.alert('ลบผู้ใช้', `ต้องการลบ ${name} หรือไม่?`, [
       { text: 'ยกเลิก', style: 'cancel' },
@@ -239,6 +267,15 @@ export default function AdminTenants() {
                     <InfoRow label="สิ้นสุด" value={c.end_date ? new Date(c.end_date).toLocaleDateString('th-TH') : '-'} />
                     <InfoRow label="ค่าเช่า/เดือน" value={`฿${Number(c.monthly_rent || 0).toLocaleString()}`} />
                     <InfoRow label="เงินมัดจำ" value={`฿${Number(c.deposit_amount || 0).toLocaleString()}`} />
+                    {(c.status === 'ACTIVE' || c.status === 'PENDING') && (
+                      <TouchableOpacity
+                        style={styles.cancelContractCardBtn}
+                        onPress={() => handleTerminateContract(c.contract_id, c.contract_number)}
+                      >
+                        <Ionicons name="close-circle-outline" size={18} color="#DC2626" style={{ marginRight: 6 }} />
+                        <Text style={styles.cancelContractCardText}>ยกเลิกสัญญาเช่านี้</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 ))
               )}
@@ -319,6 +356,22 @@ const styles = StyleSheet.create({
   deleteText: { color: '#DC2626', fontWeight: '700' },
   deactivateBtn: { backgroundColor: '#FEF3C7', borderRadius: 10, padding: 13, alignItems: 'center', marginBottom: 10 },
   deactivateText: { color: '#D97706', fontWeight: '700' },
+  cancelContractCardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderRadius: 10,
+    padding: 11,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+  },
+  cancelContractCardText: {
+    color: '#DC2626',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   closeBtn: { backgroundColor: '#F3F4F6', borderRadius: 10, padding: 13, alignItems: 'center' },
   closeText: { color: '#374151', fontWeight: '600' },
   fab: {

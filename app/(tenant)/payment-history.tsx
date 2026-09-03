@@ -212,7 +212,7 @@ export default function PaymentHistory() {
                   {/* top */}
                   <View style={s.cardTop}>
                     <View style={s.monthBadge}>
-                      <Text style={s.monthIcon}>📅</Text>
+                      <Text style={s.monthIcon}></Text>
                       <Text style={s.monthText}>{thMonthFull(item.billing_month)}</Text>
                     </View>
                     <View style={s.paidBadge}>

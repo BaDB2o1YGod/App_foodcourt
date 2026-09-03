@@ -2,7 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { billsAPI, settingsAPI } from '../../services/api';
+import { billsAPI, settingsAPI, stallsAPI } from '../../services/api';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -25,8 +26,11 @@ const BILLING_MONTHS = generateBillingMonths();
 
 export default function MonthlyBilling() {
   const params = useLocalSearchParams();
-  const slot_id = params.slot_id as string;
-  const slot_number = params.slot_number as string;
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(params.slot_id as string || null);
+  const [selectedSlotNumber, setSelectedSlotNumber] = useState<string>(params.slot_number as string || '');
+  
+  const [stalls, setStalls] = useState<any[]>([]);
+  const [showStallPicker, setShowStallPicker] = useState(false);
 
   const [billingMonth, setBillingMonth] = useState(BILLING_MONTHS[1]); // default = current month (index 1 because -1 is previous)
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -48,7 +52,18 @@ export default function MonthlyBilling() {
         }
       })
       .catch(() => {});
-  }, []);
+
+    // Fetch stalls if no slot_id provided
+    if (!params.slot_id) {
+      stallsAPI.getAll({ status: 'OCCUPIED' })
+        .then((res) => {
+          const data = res.data.data || [];
+          data.sort((a: any, b: any) => a.slot_number.localeCompare(b.slot_number, undefined, { numeric: true, sensitivity: 'base' }));
+          setStalls(data);
+        })
+        .catch(() => {});
+    }
+  }, [params.slot_id]);
 
   // Calculate default due date based on selected billing month and dueDay setting (default 10th of next month)
   useEffect(() => {
@@ -64,11 +79,14 @@ export default function MonthlyBilling() {
 
   // Fetch bill breakdown
   const calculateBill = async () => {
-    if (!slot_id || !billingMonth) return;
+    if (!selectedSlotId || !billingMonth) {
+      setBillData(null);
+      return;
+    }
     setLoading(true);
     try {
       const res = await billsAPI.calculate({
-        slot_id: parseInt(slot_id, 10),
+        slot_id: parseInt(selectedSlotId, 10),
         month: billingMonth.key
       });
       setBillData(res.data.data);
@@ -84,7 +102,7 @@ export default function MonthlyBilling() {
 
   useEffect(() => {
     calculateBill();
-  }, [slot_id, billingMonth]);
+  }, [selectedSlotId, billingMonth]);
 
   const handleCreateBill = async () => {
     if (!billData) return;
@@ -111,7 +129,7 @@ export default function MonthlyBilling() {
             setSubmitting(true);
             try {
               await billsAPI.create({
-                slot_id: parseInt(slot_id, 10),
+                slot_id: parseInt(selectedSlotId!, 10),
                 billing_month: billingMonth.key,
                 water_cost: billData.amounts.water,
                 electricity_cost: billData.amounts.electric,
@@ -131,29 +149,39 @@ export default function MonthlyBilling() {
     );
   };
 
-  if (!slot_id) {
-    return (
-      <View style={s.center}>
-        <Text style={s.errorText}>ไม่พบรหัสล็อก โปรดเข้าสู่อีกครั้ง</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={s.container}>
       <View style={s.headerBox}>
         <Text style={s.headerTitle}>ออกบิลรายเดือน</Text>
-        <Text style={s.headerSubTitle}>ล็อก: {slot_number}</Text>
+        <Text style={s.headerSubTitle}>
+          {selectedSlotId ? `ล็อก: ${selectedSlotNumber}` : 'เลือกล็อกเพื่อดำเนินการ'}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={s.content}>
 
+        {/* Stall Selection (Shows only if we need to select) */}
+        {!params.slot_id && (
+          <View style={s.section}>
+            <Text style={s.sectionLabel}> เลือกล็อก</Text>
+            <TouchableOpacity style={s.monthSelector} onPress={() => setShowStallPicker(true)}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MaterialIcons name="storefront" size={20} color="#6B7280" />
+                <Text style={s.monthSelectorValue}>
+                  {selectedSlotNumber ? `ล็อก ${selectedSlotNumber}` : 'กรุณาเลือกล็อก'}
+                </Text>
+              </View>
+              <Text style={s.monthSelectorArrow}>เลือก ▼</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Month Picker Selection */}
         <View style={s.section}>
-          <Text style={s.sectionLabel}>📅 รอบบิล</Text>
+          <Text style={s.sectionLabel}> รอบบิล</Text>
           <TouchableOpacity style={s.monthSelector} onPress={() => setShowMonthPicker(true)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={s.monthSelectorIcon}>🗓</Text>
+              <Text style={s.monthSelectorIcon}></Text>
               <Text style={s.monthSelectorValue}>{billingMonth.label}</Text>
             </View>
             <Text style={s.monthSelectorArrow}>เปลี่ยน ▼</Text>
@@ -241,12 +269,45 @@ export default function MonthlyBilling() {
           </>
         ) : (
           <View style={s.emptyState}>
-            <Text style={s.emptyIcon}>📦</Text>
-            <Text style={s.emptyText}>ไม่มีข้อมูลมิเตอร์หรือสัญญา</Text>
-            <Text style={s.emptySub}>ไม่สามารถคำนวณบิลได้ กรุณาตรวจสอบว่าจดมิเตอร์หรือยัง</Text>
+            <Text style={s.emptyText}>ไม่สามารถออกบิลได้</Text>
+            <Text style={s.emptySub}>กรุณาเลือกล็อก หรือ ตรวจสอบว่าได้บันทึกมิเตอร์ของล็อกนี้แล้ว</Text>
           </View>
         )}
       </ScrollView>
+
+      {/* Stall Picker Modal */}
+      <Modal visible={showStallPicker} transparent animationType="slide" onRequestClose={() => setShowStallPicker(false)}>
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setShowStallPicker(false)}>
+          <View style={[s.modalSheet, { maxHeight: '80%' }]}>
+            <View style={s.modalHandle} />
+            <Text style={s.modalTitle}>เลือกล็อกที่ต้องการออกบิล</Text>
+            <ScrollView style={{ marginTop: 10 }}>
+              {stalls.map((stall) => {
+                const isSelected = stall.slot_id.toString() === selectedSlotId;
+                return (
+                  <TouchableOpacity
+                    key={stall.slot_id}
+                    style={[s.monthOption, isSelected && s.monthOptionActive]}
+                    onPress={() => { 
+                      setSelectedSlotId(stall.slot_id.toString());
+                      setSelectedSlotNumber(stall.slot_number);
+                      setShowStallPicker(false); 
+                    }}
+                  >
+                    <Text style={[s.monthOptionText, isSelected && s.monthOptionTextActive]}>
+                      ล็อก {stall.slot_number} - {stall.rental_contracts?.[0]?.tenant?.first_name || 'ไม่ทราบชื่อ'}
+                    </Text>
+                    {isSelected && <Text style={s.monthOptionCheck}>✓</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+              {stalls.length === 0 && (
+                <Text style={{ textAlign: 'center', color: '#9CA3AF', marginTop: 20 }}>ไม่มีล็อกที่มีผู้เช่า</Text>
+              )}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Month Picker Modal */}
       <Modal visible={showMonthPicker} transparent animationType="slide" onRequestClose={() => setShowMonthPicker(false)}>
