@@ -8,13 +8,7 @@ import * as ExpoClipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { usersAPI, shopTypesAPI } from '../../services/api';
-
-interface ShopType {
-  shop_type_id: number;
-  type_name: string;
-  require_grease_trap: boolean;
-}
+import { usersAPI } from '../../services/api';
 
 // ─── ข้อมูลคำนำหน้า ────────────────────────────────────
 const TITLE_OPTIONS = ['นาย', 'นาง', 'นางสาว'];
@@ -25,7 +19,6 @@ const PROVINCES = Object.keys(ADDRESS_DATA).sort((a, b) => a.localeCompare(b, 't
 
 export default function CreateTenantScreen() {
   const [loading, setLoading] = useState(false);
-  const [shopTypes, setShopTypes] = useState<ShopType[]>([]);
   const [createdCredentials, setCreatedCredentials] = useState<{ username: string; temp_password: string } | null>(null);
 
   // Form fields
@@ -40,7 +33,6 @@ export default function CreateTenantScreen() {
   const [province, setProvince] = useState('');
   const [district, setDistrict] = useState('');
   const [subdistrict, setSubdistrict] = useState('');
-  const [selectedShopType, setSelectedShopType] = useState<number | null>(null);
   
   const [profileImage, setProfileImage] = useState<string | null>(null);
 
@@ -50,12 +42,6 @@ export default function CreateTenantScreen() {
   const [dropdownOptions, setDropdownOptions] = useState<string[]>([]);
   const [dropdownCallback, setDropdownCallback] = useState<((val: string) => void) | null>(null);
   const [dropdownSearch, setDropdownSearch] = useState('');
-
-  useEffect(() => {
-    shopTypesAPI.getAll()
-      .then((res) => setShopTypes(res.data.data || []))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (username.length < 3) {
@@ -338,24 +324,6 @@ export default function CreateTenantScreen() {
             onPress={() => openDropdown('ตำบล', subdistrictOptions, setSubdistrict)}
           />
 
-          <SectionLabel label="ประเภทร้าน" />
-          <View style={styles.shopTypeRow}>
-            {shopTypes.map((st) => (
-              <TouchableOpacity
-                key={st.shop_type_id}
-                style={[styles.shopTypeBtn, selectedShopType === st.shop_type_id && styles.shopTypeBtnActive]}
-                onPress={() => setSelectedShopType(st.shop_type_id)}
-              >
-                <Text style={[styles.shopTypeBtnText, selectedShopType === st.shop_type_id && styles.shopTypeBtnTextActive]}>
-                  {st.type_name}
-                </Text>
-                {st.require_grease_trap && (
-                  <Text style={styles.greaseBadge}>มีบ่อดักไขมัน</Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-
           <SectionLabel label="ข้อมูลล็อกอิน" />
 
           <FieldRow label="Username *" value={username} onChange={setUsername} placeholder="เช่น tenant001" autoCapitalize="none" />
@@ -490,15 +458,6 @@ const styles = StyleSheet.create({
   },
   ddFieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   ddFieldText: { fontSize: 14, color: '#1F2937' },
-  shopTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  shopTypeBtn: {
-    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
-    borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
-  },
-  shopTypeBtnActive: { borderColor: '#7C3AED', backgroundColor: '#F5F3FF' },
-  shopTypeBtnText: { fontSize: 13, color: '#6B7280', fontWeight: '600' },
-  shopTypeBtnTextActive: { color: '#7C3AED' },
-  greaseBadge: { fontSize: 10, color: '#D97706', marginTop: 2 },
   usernameNote: { fontSize: 12, color: '#9CA3AF', marginTop: -6, marginBottom: 4 },
   errorText: { color: '#EF4444', fontSize: 12, marginTop: -8, marginBottom: 8, marginLeft: 16 },
   createBtn: {

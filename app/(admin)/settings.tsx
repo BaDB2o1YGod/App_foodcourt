@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, Alert, Modal } from 'react-native';
 import { settingsAPI, stallsAPI } from '../../services/api';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function AdminSettings() {
   const [waterRate, setWaterRate] = useState('');
   const [electricRate, setElectricRate] = useState('');
   const [lateRentFine, setLateRentFine] = useState('');
+  const [lateUtilityFine, setLateUtilityFine] = useState('');
   const [dueDayOfMonth, setDueDayOfMonth] = useState('10');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,6 +37,7 @@ export default function AdminSettings() {
       setWaterRate(String(rates.waterRatePerUnit || ''));
       setElectricRate(String(rates.electricRatePerUnit || ''));
       setLateRentFine(String(rates.lateRentFine || '100'));
+      setLateUtilityFine(String(rates.lateUtilityFine || '50'));
       setDueDayOfMonth(String(rates.dueDayOfMonth || rates.paymentDueDays || '10'));
 
       // Clean deduplicate stall list by slot_number
@@ -63,6 +66,7 @@ export default function AdminSettings() {
         waterRatePerUnit: parseFloat(waterRate),
         electricRatePerUnit: parseFloat(electricRate),
         lateRentFine: parseFloat(lateRentFine),
+        lateUtilityFine: parseFloat(lateUtilityFine),
         dueDayOfMonth: parseInt(dueDayOfMonth, 10) || 10,
       });
       Alert.alert('สำเร็จ', 'บันทึกอัตราค่าน้ำ-ไฟเรียบร้อย');
@@ -73,13 +77,14 @@ export default function AdminSettings() {
   };
 
   const handleSaveFineRates = async () => {
-    if (!dueDayOfMonth || !lateRentFine) { Alert.alert('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ'); return; }
+    if (!dueDayOfMonth || !lateRentFine || !lateUtilityFine) { Alert.alert('แจ้งเตือน', 'กรุณากรอกข้อมูลให้ครบ'); return; }
     setSaving(true);
     try {
       await settingsAPI.updateUtilityRates({
         waterRatePerUnit: parseFloat(waterRate),
         electricRatePerUnit: parseFloat(electricRate),
         lateRentFine: parseFloat(lateRentFine),
+        lateUtilityFine: parseFloat(lateUtilityFine),
         dueDayOfMonth: parseInt(dueDayOfMonth, 10) || 10,
       });
       Alert.alert('สำเร็จ', 'บันทึกกำหนดวันชำระและค่าปรับเรียบร้อย');
@@ -204,6 +209,30 @@ export default function AdminSettings() {
               หากเลยวันที่ {dueDayOfMonth || '10'} ระบบจะคำนวณค่าปรับสะสม: จำนวนวันที่เลยกำหนด × ฿{lateRentFine || '100'}
             </Text>
           </View>
+
+          {/* New Utility Fine Field */}
+          <View style={styles.field}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <Ionicons name="alert-circle-outline" size={16} color="#EC4899" style={{ marginRight: 4 }} />
+              <Text style={[styles.label, { marginBottom: 0, color: '#374151' }]}>ค่าปรับจ่ายค่าน้ำ-ไฟล่าช้า (บาท/วัน/บิล)</Text>
+            </View>
+            <View style={[styles.inputWrapper, !isEditingFine && styles.inputWrapperDisabled]}>
+              <TextInput
+                style={[styles.inputInner, !isEditingFine && styles.inputInnerDisabled]}
+                value={lateUtilityFine}
+                onChangeText={setLateUtilityFine}
+                keyboardType="numeric"
+                editable={isEditingFine}
+                placeholder="50"
+                placeholderTextColor="#9CA3AF"
+              />
+              <Text style={styles.unitText}>฿/วัน</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 4 }}>
+              ค่าเริ่มต้น: 50 บาท/วัน (นับต่อ 1 บิลที่ค้าง)
+            </Text>
+          </View>
+
           {!isEditingFine ? (
             <TouchableOpacity style={styles.editBtn} onPress={() => setIsEditingFine(true)}>
               <Text style={styles.editBtnTxt}>แก้ไข</Text>
@@ -324,6 +353,12 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 10, padding: 12, fontSize: 15, color: '#1F2937' },
   inputDisabled: { backgroundColor: '#F3F4F6', color: '#6B7280', borderColor: '#E5E7EB' },
   
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 10 },
+  inputWrapperDisabled: { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
+  inputInner: { flex: 1, padding: 12, fontSize: 15, color: '#1F2937' },
+  inputInnerDisabled: { color: '#6B7280' },
+  unitText: { paddingRight: 12, color: '#9CA3AF', fontSize: 15 },
+
   selectBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F9FAFB', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 10, padding: 12 },
   selectPlaceholder: { fontSize: 15, color: '#9CA3AF' },
   selectValue: { fontSize: 15, color: '#1F2937', fontWeight: '600' },

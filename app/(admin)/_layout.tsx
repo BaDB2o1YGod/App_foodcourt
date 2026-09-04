@@ -47,7 +47,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="settings" options={{ href: null, headerTitle: 'ตั้งค่าระบบ' }} />
       <Tabs.Screen name="create-contract" options={{ href: null, headerTitle: 'สร้างสัญญาเช่า' }} />
       <Tabs.Screen name="create-tenant" options={{ href: null, headerTitle: 'เพิ่มผู้เช่า' }} />
-      <Tabs.Screen name="cancellation-requests" options={{ href: null, headerTitle: 'คำร้องขอยกเลิกเช่า' }} />
+      <Tabs.Screen name="cancellation-requests" options={{ href: null, headerTitle: 'คำร้องขอยกเลิกสัญญา' }} />
     </Tabs>
   );
 }

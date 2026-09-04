@@ -33,6 +33,7 @@ export default function CreateContractScreen() {
 
   // Form Fields
   const [selectedTenantId, setSelectedTenantId] = useState<number | null>(null);
+  const [contractNumber, setContractNumber] = useState('');
   const [menuType, setMenuType] = useState<string>('');
   const [shopTypes, setShopTypes] = useState<any[]>([]);
   const [startDate, setStartDate] = useState('');
@@ -227,6 +228,7 @@ export default function CreateContractScreen() {
       };
 
       const formData = new FormData();
+      if (contractNumber) formData.append('contract_number', contractNumber);
       formData.append('slot_id', formSlotId!.toString());
       formData.append('tenant_id', selectedTenantId!.toString());
       formData.append('startDate', formatDateToISO(startDate));
@@ -387,6 +389,8 @@ export default function CreateContractScreen() {
 
           <Text style={styles.sectionLabel}>ข้อมูลสัญญา</Text>
 
+          <FieldRow label="เลขที่สัญญาเช่า (เว้นว่างได้เพื่อสร้างอัตโนมัติ)" value={contractNumber} onChange={setContractNumber} placeholder="เช่น CT-2023-001" />
+
           <DateDropdownField
             label="วันที่เริ่มสัญญา"
             value={startDate}
@@ -399,7 +403,7 @@ export default function CreateContractScreen() {
             placeholder="เลือกวันที่"
             onPress={() => setShowDatePicker('end')}
           />
-          <FieldRow label="เงินมัดจำ (บาท)" value={deposit} onChange={setDeposit} placeholder="เช่น 5000" keyboardType="numeric" />
+          <FieldRow label="เงินมัดจำ (บาท)" value={deposit} onChange={setDeposit} keyboardType="numeric" />
 
           <Text style={[styles.sectionLabel, { marginTop: 24 }]}>หมวดหมู่ร้านค้า (ประเภทอาหาร)</Text>
           <TouchableOpacity
