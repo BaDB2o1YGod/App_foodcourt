@@ -61,7 +61,7 @@ export default function AdminDashboard() {
     { icon: 'people', label: 'ผู้เช่า', route: '/(admin)/tenants', color: '#3B82F6', bg: '#EFF6FF' },
     { icon: 'person-add', label: 'เพิ่มผู้เช่า', route: '/(admin)/create-tenant', color: '#2563EB', bg: '#DBEAFE' },
     { icon: 'document-text', label: 'สร้างสัญญา', route: '/(admin)/create-contract', color: '#4F46E5', bg: '#E0E7FF' },
-    { icon: 'storefront', label: 'ล็อก', route: '/(admin)/stalls', color: '#10B981', bg: '#ECFDF5' },
+    { icon: 'storefront', label: 'ล็อค', route: '/(admin)/stalls', color: '#10B981', bg: '#ECFDF5' },
     { icon: 'flash', label: 'บันทึกมิเตอร์', route: '/(admin)/meter-recording', color: '#F59E0B', bg: '#FFFBEB' },
     { icon: 'receipt', label: 'จัดการบิล', route: '/(admin)/bills', color: '#8B5CF6', bg: '#F5F3FF' },
     { icon: 'invoice-text-send', family: 'MaterialCommunityIcons', label: 'ออกบิลรายเดือน', route: '/(admin)/monthly-billing', color: '#ffc400ff', bg: '#F5F3FF' },
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
 
       {/* Stats */}
       <View style={styles.statsGrid}>
-        <StatCard label="ล็อกทั้งหมด" value={stats.stalls} icon="storefront" color="#3B82F6" />
+        <StatCard label="ล็อคทั้งหมด" value={stats.stalls} icon="storefront" color="#3B82F6" />
         <StatCard label="มีผู้เช่า" value={stats.occupied} icon="people" color="#10B981" />
         <StatCard label="บิลรอชำระ" value={stats.pending} icon="receipt" color="#F59E0B" badge={stats.pending} onPress={() => router.push({ pathname: '/(admin)/bills', params: { filter: 'PENDING' } })} />
         <StatCard label="รอซ่อม" value={stats.repairs} icon="construct" color="#EF4444" />
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
               )}
             </View>
             <Text style={styles.courtName}>ศูนย์อาหาร {fc}</Text>
-            <Text style={styles.courtSub}>ดูแผนที่ล็อก →</Text>
+            <Text style={styles.courtSub}>ดูแผนที่ล็อค →</Text>
           </TouchableOpacity>
         ))}
       </View>

@@ -55,14 +55,14 @@ export default function AdminStalls() {
   const slotBg = (stall: any) =>
     hasActiveContract(stall) ? '#FECACA' : '#BBF7D0'; // red-200 / green-200 (pastel)
 
-  /* Action sheet เมื่อกดล็อก */
+  /* Action sheet เมื่อกดล็อค */
   const handlePress = (stall: any) => {
     const occupied = hasActiveContract(stall);
     Alert.alert(
-      `🏪 ล็อก ${stall.slot_number}`,
+      `🏪 ล็อค ${stall.slot_number}`,
       occupied
         ? `ผู้เช่า: ${stall.rental_contracts[0]?.tenant?.first_name ?? '-'} ${stall.rental_contracts[0]?.tenant?.last_name ?? ''}`
-        : 'ล็อกว่าง',
+        : 'ล็อคว่าง',
       [
         ...(occupied
           ? [{
@@ -92,7 +92,7 @@ export default function AdminStalls() {
 
   const changeStatus = (stall: any) => {
     const options = ['VACANT', 'OCCUPIED', 'MAINTENANCE'].filter((s) => s !== stall.status);
-    Alert.alert('เปลี่ยนสถานะ', `ล็อก ${stall.slot_number}`, [
+    Alert.alert('เปลี่ยนสถานะ', `ล็อค ${stall.slot_number}`, [
       ...options.map((s) => ({
         text: s === 'VACANT' ? 'ว่าง' : s === 'OCCUPIED' ? 'มีผู้เช่า' : 'ซ่อมบำรุง',
         onPress: async () => {

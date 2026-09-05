@@ -95,7 +95,7 @@ export default function TenantDashboard() {
             {stall && (
               <View style={styles.stallBadge}>
                 <Ionicons name="storefront" size={16} color="#15ff00ff" />
-                <Text style={styles.stallText}>ล็อก {stall.slot_number} — ศูนย์อาหาร {stall.food_court_id}</Text>
+                <Text style={styles.stallText}>ล็อค {stall.slot_number} — ศูนย์อาหาร {stall.food_court_id}</Text>
               </View>
             )}
           </View>
@@ -148,7 +148,7 @@ export default function TenantDashboard() {
               )}
             </View>
             <Text style={styles.courtName}>ศูนย์อาหาร {fc}</Text>
-            <Text style={styles.courtSub}>ดูแผนที่ล็อก →</Text>
+            <Text style={styles.courtSub}>ดูแผนที่ล็อค →</Text>
           </TouchableOpacity>
         ))}
       </View>

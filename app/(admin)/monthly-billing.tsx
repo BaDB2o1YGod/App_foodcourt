@@ -154,7 +154,7 @@ export default function MonthlyBilling() {
       <View style={s.headerBox}>
         <Text style={s.headerTitle}>ออกบิลรายเดือน</Text>
         <Text style={s.headerSubTitle}>
-          {selectedSlotId ? `ล็อก: ${selectedSlotNumber}` : 'เลือกล็อกเพื่อดำเนินการ'}
+          {selectedSlotId ? `ล็อค: ${selectedSlotNumber}` : 'เลือกล็อคเพื่อดำเนินการ'}
         </Text>
       </View>
 
@@ -163,12 +163,12 @@ export default function MonthlyBilling() {
         {/* Stall Selection (Shows only if we need to select) */}
         {!params.slot_id && (
           <View style={s.section}>
-            <Text style={s.sectionLabel}> เลือกล็อก</Text>
+            <Text style={s.sectionLabel}> เลือกล็อค</Text>
             <TouchableOpacity style={s.monthSelector} onPress={() => setShowStallPicker(true)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <MaterialIcons name="storefront" size={20} color="#6B7280" />
                 <Text style={s.monthSelectorValue}>
-                  {selectedSlotNumber ? `ล็อก ${selectedSlotNumber}` : 'กรุณาเลือกล็อก'}
+                  {selectedSlotNumber ? `ล็อค ${selectedSlotNumber}` : 'กรุณาเลือกล็อค'}
                 </Text>
               </View>
               <Text style={s.monthSelectorArrow}>เลือก ▼</Text>
@@ -270,7 +270,7 @@ export default function MonthlyBilling() {
         ) : (
           <View style={s.emptyState}>
             <Text style={s.emptyText}>ไม่สามารถออกบิลได้</Text>
-            <Text style={s.emptySub}>กรุณาเลือกล็อก หรือ ตรวจสอบว่าได้บันทึกมิเตอร์ของล็อกนี้แล้ว</Text>
+            <Text style={s.emptySub}>กรุณาเลือกล็อค หรือ ตรวจสอบว่าได้บันทึกมิเตอร์ของล็อคนี้แล้ว</Text>
           </View>
         )}
       </ScrollView>
@@ -280,7 +280,7 @@ export default function MonthlyBilling() {
         <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setShowStallPicker(false)}>
           <View style={[s.modalSheet, { maxHeight: '80%' }]}>
             <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>เลือกล็อกที่ต้องการออกบิล</Text>
+            <Text style={s.modalTitle}>เลือกล็อคที่ต้องการออกบิล</Text>
             <ScrollView style={{ marginTop: 10 }}>
               {stalls.map((stall) => {
                 const isSelected = stall.slot_id.toString() === selectedSlotId;
@@ -295,14 +295,14 @@ export default function MonthlyBilling() {
                     }}
                   >
                     <Text style={[s.monthOptionText, isSelected && s.monthOptionTextActive]}>
-                      ล็อก {stall.slot_number} - {stall.rental_contracts?.[0]?.tenant?.first_name || 'ไม่ทราบชื่อ'}
+                      ล็อค {stall.slot_number} - {stall.rental_contracts?.[0]?.tenant?.first_name || 'ไม่ทราบชื่อ'}
                     </Text>
                     {isSelected && <Text style={s.monthOptionCheck}>✓</Text>}
                   </TouchableOpacity>
                 );
               })}
               {stalls.length === 0 && (
-                <Text style={{ textAlign: 'center', color: '#9CA3AF', marginTop: 20 }}>ไม่มีล็อกที่มีผู้เช่า</Text>
+                <Text style={{ textAlign: 'center', color: '#9CA3AF', marginTop: 20 }}>ไม่มีล็อคที่มีผู้เช่า</Text>
               )}
             </ScrollView>
           </View>

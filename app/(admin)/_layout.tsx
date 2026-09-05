@@ -40,7 +40,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="tenants" options={{ title: 'ผู้เช่า', tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />, headerTitle: 'จัดการผู้เช่า' }} />
       <Tabs.Screen name="repairs" options={{ title: 'ซ่อม', tabBarIcon: ({ color, size }) => <Ionicons name="construct" size={size} color={color} />, headerTitle: 'จัดการซ่อม' }} />
       <Tabs.Screen name="bills" options={{ title: 'จัดการบิล', tabBarIcon: ({ color, size }) => <Ionicons name="receipt" size={size} color={color} />, headerTitle: 'จัดการบิล' }} />
-      <Tabs.Screen name="stalls" options={{ title: 'ล็อก', tabBarIcon: ({ color, size }) => <Ionicons name="storefront" size={size} color={color} />, headerTitle: 'จัดการล็อก' }} />
+      <Tabs.Screen name="stalls" options={{ title: 'ล็อค', tabBarIcon: ({ color, size }) => <Ionicons name="storefront" size={size} color={color} />, headerTitle: 'จัดการล็อค' }} />
       <Tabs.Screen name="meter-recording" options={{ href: null, headerTitle: 'บันทึกมิเตอร์' }} />
       <Tabs.Screen name="monthly-billing" options={{ href: null, headerTitle: 'ออกบิลรายเดือน' }} />
       <Tabs.Screen name="reports" options={{ href: null, headerTitle: 'รายงาน' }} />

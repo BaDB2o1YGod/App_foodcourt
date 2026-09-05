@@ -131,7 +131,7 @@ export default function AdminRepairs() {
                   <StatusBadge status={selected?.status} size="sm" />
                   {selected?.category && <Text style={[styles.meta, { marginTop: 8 }]}>🏷 {selected.category}</Text>}
                   {selected?.description && <Text style={{ fontSize: 14, color: '#374151', marginTop: 8, lineHeight: 20 }}>{selected.description}</Text>}
-                  <Text style={[styles.meta, { marginTop: 8 }]}>📍 ล็อก {selected?.slot?.slot_number || '-'} • {selected?.requested_at ? new Date(selected.requested_at).toLocaleDateString('th-TH') : ''}</Text>
+                  <Text style={[styles.meta, { marginTop: 8 }]}>📍 ล็อค {selected?.slot?.slot_number || '-'} • {selected?.requested_at ? new Date(selected.requested_at).toLocaleDateString('th-TH') : ''}</Text>
                 </View>
 
                 {/* Request Images */}

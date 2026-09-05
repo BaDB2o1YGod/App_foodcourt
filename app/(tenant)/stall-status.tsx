@@ -63,7 +63,7 @@ export default function StallStatus() {
   const handlePress = (stall: any) => {
     const occupied = hasActiveContract(stall);
     Alert.alert(
-      `🏪 ล็อก ${stall.slot_number}`,
+      `🏪 ล็อค ${stall.slot_number}`,
       occupied
         ? `สถานะ: ไม่ว่าง (มีผู้เช่า)\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size ? `${stall.slot_size} ตร.ม.` : '-'}`
         : `สถานะ: ว่าง\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size ? `${stall.slot_size} ตร.ม.` : '-'}`,

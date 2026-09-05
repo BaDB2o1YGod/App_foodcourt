@@ -241,7 +241,7 @@ export default function CancellationRequests() {
               <Text style={styles.title}>
                 สัญญา: {item.contract_number || `#${item.contract_id}`}
               </Text>
-              <Text style={styles.subtitle}>ล็อก: {item.stall?.slot_number || '-'}</Text>
+              <Text style={styles.subtitle}>ล็อค: {item.stall?.slot_number || '-'}</Text>
             </View>
             <StatusBadge status={item.status} size="sm" />
           </View>

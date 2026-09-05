@@ -95,7 +95,7 @@ export default function TenantLayout() {
       {/* Hidden screens - accessible via navigation only */}
       <Tabs.Screen name="upload-bill" options={{ href: null, headerTitle: 'อัปโหลดสลิป' }} />
       <Tabs.Screen name="payment-history" options={{ href: null, headerTitle: 'ประวัติการชำระเงิน' }} />
-      <Tabs.Screen name="stall-status" options={{ href: null, headerTitle: 'สถานะล็อก' }} />
+      <Tabs.Screen name="stall-status" options={{ href: null, headerTitle: 'สถานะล็อค' }} />
       <Tabs.Screen name="track-repairs" options={{ href: null, headerTitle: 'ติดตามการซ่อม' }} />
       <Tabs.Screen name="cancellation-form" options={{ href: null, headerTitle: 'ฟอร์มยกเลิกเช่า' }} />
     </Tabs>

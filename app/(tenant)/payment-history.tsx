@@ -1,19 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, RefreshControl,
-  Image, TouchableOpacity, Modal, Dimensions, FlatList,
+  Image, TouchableOpacity, Modal, Dimensions,
+  TouchableWithoutFeedback,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { billsAPI } from '../../services/api';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const { width } = Dimensions.get('window');
 
 /* ─── helpers ─────────────────────────────────────────── */
-const getYear  = (d: string) => new Date(d).getFullYear();
-const getMonth = (d: string) => new Date(d).getMonth() + 1; // 1-12
-
-const thMonthShort = (month: number) =>
-  new Date(2000, month - 1, 1).toLocaleDateString('th-TH', { month: 'short' });
+const THAI_MONTHS = [
+  'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+];
 
 const thMonthFull = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
@@ -63,11 +64,12 @@ export default function PaymentHistory() {
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [slipUri, setSlipUri]       = useState<string | null>(null);
-  const [selYear, setSelYear]       = useState<number | null>(null);
-  const [selMonth, setSelMonth]     = useState<number | null>(null); // null = all months
 
-  const yearListRef  = useRef<FlatList>(null);
-  const monthListRef = useRef<FlatList>(null);
+  // Month Picker States
+  const [selectedMonth, setSelectedMonth] = useState<string>('ALL');
+  const [monthPickerVisible, setMonthPickerVisible] = useState(false);
+  const [pickerYear, setPickerYear] = useState<number>(new Date().getFullYear());
+
   const mainScrollRef = useRef<ScrollView>(null);
 
   /* fetch */
@@ -76,47 +78,77 @@ export default function PaymentHistory() {
       const res = await billsAPI.getHistory();
       const data: Expense[] = res.data.data || [];
       setHistory(data);
-      if (data.length > 0 && !selYear) {
-        setSelYear(getYear(data[0].billing_month));
-        setSelMonth(null);
-      }
     } catch (e) { console.error(e); }
   };
   useEffect(() => { fetchData().finally(() => setLoading(false)); }, []);
 
-  /* derived lists */
-  const years: number[] = Array.from(new Set(history.map(i => getYear(i.billing_month)))).sort().reverse();
+  // Available months from history
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    history.forEach((b) => {
+      if (b.billing_month) {
+        const d = new Date(b.billing_month);
+        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        months.add(ym);
+      }
+    });
+    return Array.from(months);
+  }, [history]);
 
-  const monthsInYear: number[] = selYear
-    ? Array.from(new Set(history.filter(i => getYear(i.billing_month) === selYear).map(i => getMonth(i.billing_month))))
-        .sort().reverse()
-    : [];
-
-  const filtered = history.filter(i => {
-    if (selYear  && getYear(i.billing_month)  !== selYear)  return false;
-    if (selMonth && getMonth(i.billing_month) !== selMonth) return false;
-    return true;
-  });
+  // Filtered history
+  const filtered = useMemo(() => {
+    if (selectedMonth === 'ALL') return history;
+    return history.filter((i) => {
+      if (!i.billing_month) return false;
+      const d = new Date(i.billing_month);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return ym === selectedMonth;
+    });
+  }, [history, selectedMonth]);
 
   /* handlers */
-  const handlePickYear = (y: number, idx: number) => {
-    setSelYear(y);
-    setSelMonth(null);
-    mainScrollRef.current?.scrollTo({ y: 0, animated: true });
-    yearListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+  const openMonthPicker = () => {
+    if (selectedMonth !== 'ALL') {
+      const [y] = selectedMonth.split('-');
+      setPickerYear(Number(y));
+    } else if (history.length > 0 && history[0].billing_month) {
+      setPickerYear(new Date(history[0].billing_month).getFullYear());
+    } else {
+      setPickerYear(new Date().getFullYear());
+    }
+    setMonthPickerVisible(true);
   };
-  const handlePickMonth = (m: number, idx: number) => {
-    setSelMonth(prev => (prev === m ? null : m)); // toggle off
+
+  const handleSelectMonth = (monthIndex: number) => {
+    const ym = `${pickerYear}-${String(monthIndex + 1).padStart(2, '0')}`;
+    setSelectedMonth(ym);
+    setMonthPickerVisible(false);
     mainScrollRef.current?.scrollTo({ y: 0, animated: true });
-    if (selMonth !== m) monthListRef.current?.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+  };
+
+  const handleSelectAllMonths = () => {
+    setSelectedMonth('ALL');
+    setMonthPickerVisible(false);
+    mainScrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
+  const formatMonthLabel = (ym: string) => {
+    if (ym === 'ALL') return 'ทุกเดือน';
+    const [year, month] = ym.split('-');
+    const d = new Date(Number(year), Number(month) - 1, 1);
+    return d.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' });
   };
 
   if (loading) return <LoadingSpinner />;
 
   /* summary text */
-  const summaryText = selMonth && selYear
-    ? thMonthFull(history.find(i => getYear(i.billing_month) === selYear && getMonth(i.billing_month) === selMonth)?.billing_month ?? '')
-    : selYear ? `ปี ${selYear + 543} · ${filtered.length} รายการ` : `${filtered.length} รายการ`;
+  const summaryText = selectedMonth === 'ALL'
+    ? `ทุกเดือน · ${filtered.length} รายการ`
+    : `${thMonthFull(history.find(i => {
+        const d = new Date(i.billing_month);
+        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return ym === selectedMonth;
+      })?.billing_month || `${selectedMonth}-01`)} · ${filtered.length} รายการ`;
 
   return (
     <>
@@ -124,60 +156,14 @@ export default function PaymentHistory() {
 
         {/* ══ Filter bar ══════════════════════════════════ */}
         <View style={s.filterBar}>
-
-          {/* — Year row — */}
-          <Text style={s.filterLabel}>ปี</Text>
-          <FlatList
-            ref={yearListRef}
-            data={years}
-            horizontal
-            keyExtractor={y => String(y)}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={s.pillRow}
-            onScrollToIndexFailed={() => {}}
-            renderItem={({ item: y, index }) => {
-              const active = y === selYear;
-              return (
-                <TouchableOpacity
-                  style={[s.pill, active && s.pillActiveYear]}
-                  onPress={() => handlePickYear(y, index)}
-                >
-                  <Text style={[s.pillText, active && s.pillTextActiveYear]}>
-                    {y + 543}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-
-          {/* — Month row (only when a year is chosen) — */}
-          {monthsInYear.length > 0 && (
-            <>
-              <Text style={[s.filterLabel, { marginTop: 8 }]}>เดือน</Text>
-              <FlatList
-                ref={monthListRef}
-                data={monthsInYear}
-                horizontal
-                keyExtractor={m => String(m)}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.pillRow}
-                onScrollToIndexFailed={() => {}}
-                renderItem={({ item: m, index }) => {
-                  const active = m === selMonth;
-                  return (
-                    <TouchableOpacity
-                      style={[s.pill, active && s.pillActiveMonth]}
-                      onPress={() => handlePickMonth(m, index)}
-                    >
-                      <Text style={[s.pillText, active && s.pillTextActiveMonth]}>
-                        {thMonthShort(m)}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            </>
-          )}
+          <TouchableOpacity
+            style={s.monthDropdownBtn}
+            onPress={openMonthPicker}
+          >
+            <Ionicons name="calendar-outline" size={16} color="#7C3AED" />
+            <Text style={s.monthDropdownText}>{formatMonthLabel(selectedMonth)}</Text>
+            <Ionicons name="chevron-down" size={14} color="#7C3AED" />
+          </TouchableOpacity>
         </View>
 
         {/* ══ Main list ══════════════════════════════════ */}
@@ -200,7 +186,7 @@ export default function PaymentHistory() {
 
           {filtered.length === 0 ? (
             <View style={s.empty}>
-              <Text style={s.emptyIcon}>🧾</Text>
+              <Text style={s.emptyIcon}></Text>
               <Text style={s.emptyTitle}>ไม่มีข้อมูล</Text>
               <Text style={s.emptySub}>ยังไม่มีบิลที่ชำระในช่วงเวลาที่เลือก</Text>
             </View>
@@ -251,7 +237,7 @@ export default function PaymentHistory() {
                       )}
                       {pay.payment_slip_url && (
                         <TouchableOpacity style={s.slipButton} onPress={() => setSlipUri(pay.payment_slip_url)}>
-                          <Text style={s.slipButtonText}>🖼 ดูสลิปการโอนเงิน</Text>
+                          <Text style={s.slipButtonText}>หลักฐานการชำระเงิน</Text>
                         </TouchableOpacity>
                       )}
                     </>
@@ -279,6 +265,79 @@ export default function PaymentHistory() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* ─── Grid Month Picker Modal ─── */}
+      <Modal
+        visible={monthPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMonthPickerVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setMonthPickerVisible(false)}>
+          <View style={s.pickerOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={s.pickerCard}>
+                
+                {/* Year Selector */}
+                <View style={s.yearHeader}>
+                  <TouchableOpacity onPress={() => setPickerYear((prev) => prev - 1)} style={s.yearBtn}>
+                    <Ionicons name="chevron-back" size={24} color="#4B5563" />
+                  </TouchableOpacity>
+                  <Text style={s.yearText}>ปี {pickerYear + 543}</Text>
+                  <TouchableOpacity onPress={() => setPickerYear((prev) => prev + 1)} style={s.yearBtn}>
+                    <Ionicons name="chevron-forward" size={24} color="#4B5563" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Months Grid */}
+                <View style={s.monthsGrid}>
+                  {THAI_MONTHS.map((monthName, index) => {
+                    const ym = `${pickerYear}-${String(index + 1).padStart(2, '0')}`;
+                    const isSelected = selectedMonth === ym;
+                    const hasData = availableMonths.includes(ym);
+
+                    return (
+                      <TouchableOpacity
+                        key={monthName}
+                        style={[
+                          s.monthItem,
+                          isSelected && s.monthItemActive,
+                          !hasData && !isSelected && s.monthItemEmpty
+                        ]}
+                        onPress={() => handleSelectMonth(index)}
+                      >
+                        <Text
+                          style={[
+                            s.monthItemText,
+                            isSelected && s.monthItemTextActive,
+                            !hasData && !isSelected && s.monthItemTextEmpty
+                          ]}
+                        >
+                          {monthName}
+                        </Text>
+                        {hasData && !isSelected && (
+                          <View style={s.hasDataDot} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Bottom Actions */}
+                <View style={s.pickerActions}>
+                  <TouchableOpacity
+                    style={s.selectAllBtn}
+                    onPress={handleSelectAllMonths}
+                  >
+                    <Text style={s.selectAllBtnText}>ดูประวัติทุกเดือน</Text>
+                  </TouchableOpacity>
+                </View>
+
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </>
   );
 }
@@ -290,21 +349,34 @@ const s = StyleSheet.create({
   /* filter bar */
   filterBar: {
     backgroundColor: '#fff',
-    paddingTop: 12, paddingBottom: 10,
-    borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  filterLabel: { fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, paddingHorizontal: 16, marginBottom: 6, textTransform: 'uppercase' },
-  pillRow: { paddingHorizontal: 16, gap: 8 },
-  pill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: '#F3F4F6', borderWidth: 1.5, borderColor: 'transparent' },
-
-  pillActiveYear:  { backgroundColor: '#1E40AF22', borderColor: '#1D4ED8' },
-  pillActiveMonth: { backgroundColor: '#EDE9FE',   borderColor: '#7C3AED' },
-
-  pillText:            { fontSize: 13, color: '#6B7280', fontWeight: '500' },
-  pillTextActiveYear:  { color: '#1D4ED8', fontWeight: '700' },
-  pillTextActiveMonth: { color: '#7C3AED', fontWeight: '700' },
+  monthDropdownBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F3FF',
+    borderWidth: 1,
+    borderColor: '#DDD6FE',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  monthDropdownText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#7C3AED',
+  },
 
   /* main */
   container: { flex: 1 },
@@ -363,4 +435,105 @@ const s = StyleSheet.create({
   slipImage: { width: width - 96, height: width - 96, borderRadius: 12 },
   closeButton: { marginTop: 16, backgroundColor: '#7C3AED', borderRadius: 10, paddingHorizontal: 32, paddingVertical: 10 },
   closeButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+
+  /* Grid Month Picker Modal */
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  pickerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 340,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  yearHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  yearBtn: {
+    padding: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  yearText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  monthsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  monthItem: {
+    width: '30%',
+    aspectRatio: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  monthItemActive: {
+    backgroundColor: '#7C3AED',
+    borderColor: '#7C3AED',
+  },
+  monthItemEmpty: {
+    backgroundColor: '#F9FAFB',
+    borderColor: '#F3F4F6',
+  },
+  monthItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  monthItemTextActive: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  monthItemTextEmpty: {
+    color: '#9CA3AF',
+  },
+  hasDataDot: {
+    position: 'absolute',
+    top: 6,
+    right: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  pickerActions: {
+    marginTop: 10,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  selectAllBtn: {
+    width: '100%',
+    paddingVertical: 12,
+    backgroundColor: '#F5F3FF',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  selectAllBtnText: {
+    color: '#7C3AED',
+    fontWeight: '700',
+    fontSize: 15,
+  },
 });

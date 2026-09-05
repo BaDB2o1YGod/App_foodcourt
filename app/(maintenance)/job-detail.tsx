@@ -121,7 +121,7 @@ export default function JobDetail() {
         </View>
         {job.category && <Text style={styles.cat}>🏷 {job.category}</Text>}
         {job.description && <Text style={styles.desc}>{job.description}</Text>}
-        <Text style={styles.meta}>📍 ล็อก {job.slot?.slot_number} •  {new Date(job.requested_at).toLocaleDateString('th-TH')}</Text>
+        <Text style={styles.meta}>📍 ล็อค {job.slot?.slot_number} •  {new Date(job.requested_at).toLocaleDateString('th-TH')}</Text>
         
         {/* Images attached by tenant */}
         {job.images && job.images.filter((img: any) => img.image_type === 'request').length > 0 && (

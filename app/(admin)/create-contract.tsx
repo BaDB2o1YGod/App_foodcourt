@@ -155,7 +155,7 @@ export default function CreateContractScreen() {
 
   // Fetch deposit when slot changes
   useEffect(() => {
-    // ดึงค่าเช่าของล็อกแล้วคูณ 3 เป็นเงินมัดจำ
+    // ดึงค่าเช่าของล็อคแล้วคูณ 3 เป็นเงินมัดจำ
     if (formSlotId) {
       stallsAPI.getById(formSlotId)
         .then((res) => {
@@ -205,7 +205,7 @@ export default function CreateContractScreen() {
 
   const handleCreate = async () => {
     const missing = [];
-    if (!formSlotId) missing.push('ข้อมูลล็อก (Stall)');
+    if (!formSlotId) missing.push('ข้อมูลล็อค (Stall)');
     if (!selectedTenantId) missing.push('ผู้เช่า');
     if (!startDate) missing.push('วันที่เริ่มสัญญา');
     if (!endDate) missing.push('วันสิ้นสุดสัญญา');
@@ -330,10 +330,10 @@ export default function CreateContractScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>ข้อมูลล็อก (Stall)</Text>
+          <Text style={styles.sectionLabel}>ข้อมูลล็อค (Stall)</Text>
           {slot_id ? (
             <View style={styles.ddFieldRow}>
-              <Text style={styles.ddFieldText}>กำลังสร้างสัญญาให้ล็อก: {slot_number}</Text>
+              <Text style={styles.ddFieldText}>กำลังสร้างสัญญาให้ล็อค: {slot_number}</Text>
             </View>
           ) : (
             <>
@@ -355,7 +355,7 @@ export default function CreateContractScreen() {
 
               <TouchableOpacity
                 style={styles.ddFieldRow}
-                onPress={() => openGenDropdown('เลือกล็อก', availableSlots.map(s => s.slot_number), (val) => {
+                onPress={() => openGenDropdown('เลือกล็อค', availableSlots.map(s => s.slot_number), (val) => {
                   const slot = availableSlots.find(s => s.slot_number === val);
                   if (slot) {
                     setFormSlotId(slot.slot_id);
@@ -365,7 +365,7 @@ export default function CreateContractScreen() {
                 disabled={!selectedFoodCourtId || availableSlots.length === 0}
               >
                 <Text style={[styles.ddFieldText, (!formSlotNumber || availableSlots.length === 0) && { color: '#9CA3AF' }]}>
-                  {formSlotNumber || (availableSlots.length > 0 ? 'เลือกล็อกที่ต้องการเช่า' : (selectedFoodCourtId ? 'ไม่มีล็อกว่าง' : 'กรุณาเลือกศูนย์อาหารก่อน'))}
+                  {formSlotNumber || (availableSlots.length > 0 ? 'เลือกล็อคที่ต้องการเช่า' : (selectedFoodCourtId ? 'ไม่มีล็อคว่าง' : 'กรุณาเลือกศูนย์อาหารก่อน'))}
                 </Text>
                 <Ionicons name="chevron-down" size={16} color="#9CA3AF" />
               </TouchableOpacity>

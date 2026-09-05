@@ -222,7 +222,7 @@ export default function AdminBills() {
                 </View>
                 <Text style={styles.tenant}>
                   <Ionicons name="person" size={14} color="#6B7280" />{' '}
-                  {bill.contract?.tenant?.first_name} {bill.contract?.tenant?.last_name} — ล็อก{' '}
+                  {bill.contract?.tenant?.first_name} {bill.contract?.tenant?.last_name} — ล็อค{' '}
                   {bill.contract?.slot?.slot_number}
                 </Text>
                 <Text style={styles.amount}>
@@ -298,7 +298,7 @@ export default function AdminBills() {
                     })}
                   </Text>
                   <Text style={styles.billSummaryText}>
-                    ล็อก {selectedBill.contract?.slot?.slot_number} -{' '}
+                    ล็อค {selectedBill.contract?.slot?.slot_number} -{' '}
                     {selectedBill.contract?.tenant?.first_name}
                   </Text>
                   <Text style={styles.billSummaryValue}>

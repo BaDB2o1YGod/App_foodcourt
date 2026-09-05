@@ -357,7 +357,7 @@ export default function ExecutiveBills() {
               ฿{Number(bill.total_amount || 0).toLocaleString()}
             </Text>
             <Text style={styles.meta}>
-              ล็อก {bill.contract?.slot?.slot_number || '-'} —{' '}
+              ล็อค {bill.contract?.slot?.slot_number || '-'} —{' '}
               {bill.contract?.tenant?.first_name || 'ผู้เช่า'}
             </Text>
           </View>

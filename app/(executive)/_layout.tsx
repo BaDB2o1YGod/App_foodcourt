@@ -37,7 +37,7 @@ export default function ExecutiveLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'ภาพรวม', tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" size={size} color={color} />, headerTitle: 'รายงานผู้บริหาร' }} />
-      <Tabs.Screen name="stalls" options={{ title: 'ล็อก', tabBarIcon: ({ color, size }) => <Ionicons name="storefront" size={size} color={color} />, headerTitle: 'สถานะล็อก' }} />
+      <Tabs.Screen name="stalls" options={{ title: 'ล็อค', tabBarIcon: ({ color, size }) => <Ionicons name="storefront" size={size} color={color} />, headerTitle: 'สถานะล็อค' }} />
       <Tabs.Screen name="tenants" options={{ title: 'ผู้เช่า', tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />, headerTitle: 'ผู้เช่าทั้งหมด' }} />
       <Tabs.Screen name="bills" options={{ title: 'บิล', tabBarIcon: ({ color, size }) => <Ionicons name="receipt" size={size} color={color} />, headerTitle: 'สรุปบิล' }} />
       <Tabs.Screen name="repairs" options={{ title: 'ซ่อม', tabBarIcon: ({ color, size }) => <Ionicons name="construct" size={size} color={color} />, headerTitle: 'สรุปซ่อม' }} />

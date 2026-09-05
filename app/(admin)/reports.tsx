@@ -95,7 +95,7 @@ export default function AdminReports() {
         categoryMap[cat] = (categoryMap[cat] || 0) + 1;
 
         const fcName = r.slot?.food_court?.name ? `${r.slot.food_court.name} - ` : '';
-        const slotNum = r.slot?.slot_number ? `${fcName}ล็อก ${r.slot.slot_number}` : (r.slot_id ? `ล็อก #${r.slot_id}` : 'ไม่ระบุล็อก');
+        const slotNum = r.slot?.slot_number ? `${fcName}ล็อค ${r.slot.slot_number}` : (r.slot_id ? `ล็อค #${r.slot_id}` : 'ไม่ระบุล็อค');
         slotMap[slotNum] = (slotMap[slotNum] || 0) + 1;
       });
 
@@ -240,8 +240,8 @@ export default function AdminReports() {
         contentContainerStyle={{ paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* ── Donut Chart: สถานะล็อก ── */}
-        <Section title="🏪 สถานะล็อก (Occupancy)">
+        {/* ── Donut Chart: สถานะล็อค ── */}
+        <Section title="🏪 สถานะล็อค (Occupancy)">
           <View style={styles.donutWrapper}>
             <DonutChart slices={stallSlices} size={160} strokeWidth={26} centerLabel={`${data.occupancyRate}%`} centerSublabel="อัตราการเช่า" />
           </View>
@@ -250,7 +250,7 @@ export default function AdminReports() {
             <LegendItem color="#D1FAE5" label="ว่าง" value={data.vacant} total={data.totalStalls} />
             <LegendItem color="#F59E0B" label="ซ่อมบำรุง" value={data.maintenance} total={data.totalStalls} />
             <View style={styles.divider} />
-            <StatRow label="ล็อกทั้งหมด" value={data.totalStalls} />
+            <StatRow label="ล็อคทั้งหมด" value={data.totalStalls} />
           </View>
         </Section>
 
@@ -293,7 +293,7 @@ export default function AdminReports() {
           {data.slotList.length > 0 && (
             <>
               <View style={styles.divider} />
-              <Text style={styles.subHeaderTitle}>ล็อกที่แจ้งซ่อมบ่อยที่สุด</Text>
+              <Text style={styles.subHeaderTitle}>ล็อคที่แจ้งซ่อมบ่อยที่สุด</Text>
               {data.slotList.map((item, index) => (
                 <SlotRankItem key={item.slot_number} rank={index} slotNumber={item.slot_number} count={item.count} maxCount={data.maxSlotCount} />
               ))}

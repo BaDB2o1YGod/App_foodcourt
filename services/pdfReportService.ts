@@ -175,7 +175,7 @@ export const exportMaintenanceReportPDF = async (
             ` : ''}
             ${slotList.length > 0 ? `
               <div class="chart-col">
-                <div class="chart-title">ล็อกแจ้งซ่อมบ่อยสุด</div>
+                <div class="chart-title">ล็อคแจ้งซ่อมบ่อยสุด</div>
                 ${slotBars}
               </div>
             ` : ''}
@@ -186,7 +186,7 @@ export const exportMaintenanceReportPDF = async (
           <thead>
             <tr>
               <th style="width: 15%;">วันที่แจ้ง</th>
-              <th style="width: 15%;">ล็อก</th>
+              <th style="width: 15%;">ล็อค</th>
               <th style="width: 30%;">รายการแจ้งซ่อม</th>
               <th style="width: 20%;">ผู้รับผิดชอบ</th>
               <th style="width: 20%;">สถานะ</th>
@@ -323,7 +323,7 @@ export const exportOverdueBillsReportPDF = async (
           <thead>
             <tr>
               <th style="width: 15%;">เลขที่บิล</th>
-              <th style="width: 25%;">ผู้เช่า / ล็อก</th>
+              <th style="width: 25%;">ผู้เช่า / ล็อค</th>
               <th style="width: 20%;">กำหนดชำระ</th>
               <th style="width: 20%;">สถานะ</th>
               <th style="width: 20%; text-align: right;">จำนวนเงิน (บาท)</th>
@@ -336,7 +336,7 @@ export const exportOverdueBillsReportPDF = async (
                 : tableBills.map((item) => {
                     const dueDateStr = item.due_date ? new Date(item.due_date).toLocaleDateString('th-TH') : '-';
                     const tenantName = item.tenant ? `${item.tenant.first_name || ''} ${item.tenant.last_name || ''}`.trim() : '-';
-                    const slotNo = item.slot?.slot_number ? `ล็อก ${item.slot.slot_number}` : '';
+                    const slotNo = item.slot?.slot_number ? `ล็อค ${item.slot.slot_number}` : '';
                     const statusText = item.status === 'OVERDUE' ? 'เกินกำหนด' : 'รอชำระ';
                     return `
                       <tr>

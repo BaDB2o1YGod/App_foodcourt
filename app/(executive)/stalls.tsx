@@ -60,10 +60,10 @@ export default function ExecutiveStalls() {
     const occupied = hasActiveContract(stall);
     const tenant = stall.rental_contracts?.[0]?.tenant;
     Alert.alert(
-      `🏪 ล็อก ${stall.slot_number}`,
+      `🏪 ล็อค ${stall.slot_number}`,
       occupied
         ? `ผู้เช่า: ${tenant?.first_name ?? '-'} ${tenant?.last_name ?? ''}\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size ? `${stall.slot_size} ตร.ม.` : '-'}`
-        : `ล็อกว่าง\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size ? `${stall.slot_size} ตร.ม.` : '-'}`,
+        : `ล็อคว่าง\nค่าเช่า: ฿${Number(stall.rent || 0).toLocaleString()}\nขนาด: ${stall.slot_size ? `${stall.slot_size} ตร.ม.` : '-'}`,
       [{ text: 'ปิด', style: 'cancel' }]
     );
   };

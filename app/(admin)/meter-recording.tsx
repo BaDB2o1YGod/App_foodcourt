@@ -98,7 +98,7 @@ export default function MeterRecording() {
 
   /* submit */
   const handleRecord = async () => {
-    if (!selected) { Alert.alert('แจ้งเตือน', 'กรุณาเลือกล็อก'); return; }
+    if (!selected) { Alert.alert('แจ้งเตือน', 'กรุณาเลือกล็อค'); return; }
     if (!waterReading && !electricReading) {
       Alert.alert('แจ้งเตือน', 'กรุณากรอกค่ามิเตอร์น้ำ หรือมิเตอร์ไฟ อย่างน้อยหนึ่งรายการ'); return;
     }
@@ -157,12 +157,12 @@ export default function MeterRecording() {
             <Text style={s.monthSelectorArrow}>▼</Text>
           </TouchableOpacity>
 
-          <Text style={[s.sectionTitle, { marginTop: 16 }]}>เลือกล็อก</Text>
+          <Text style={[s.sectionTitle, { marginTop: 16 }]}>เลือกล็อค</Text>
           <TouchableOpacity style={s.monthSelector} onPress={() => setShowStallPicker(true)}>
             <View style={s.monthSelectorLeft}>
               <MaterialIcons name="store" size={20} color="#6B7280" style={{ marginRight: 8 }} />
               <Text style={s.monthSelectorValue}>
-                {selected ? `ล็อก ${selected.slot_number} - ${selected.rental_contracts?.[0]?.tenant?.first_name ?? ''}` : 'กรุณาเลือกล็อก'}
+                {selected ? `ล็อค ${selected.slot_number} - ${selected.rental_contracts?.[0]?.tenant?.first_name ?? ''}` : 'กรุณาเลือกล็อค'}
               </Text>
             </View>
             <Text style={s.monthSelectorArrow}>▼</Text>
@@ -284,7 +284,7 @@ export default function MeterRecording() {
           <View style={s.summaryBox}>
             <Text style={s.summaryTitle}>สรุปการบันทึก</Text>
             <Text style={s.summaryRow}>บิลเดือน: <Text style={s.summaryVal}>{billingMonth.label}</Text></Text>
-            <Text style={s.summaryRow}>ล็อก: <Text style={s.summaryVal}>{selected.slot_number}</Text></Text>
+            <Text style={s.summaryRow}>ล็อค: <Text style={s.summaryVal}>{selected.slot_number}</Text></Text>
             {waterReading && (
               <>
                 <Text style={s.summaryRow}>เลขมิเตอร์น้ำ: <Text style={s.summaryVal}>{String(waterReading).padStart(7, '0')}</Text></Text>
@@ -382,7 +382,7 @@ export default function MeterRecording() {
         <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setShowStallPicker(false)}>
           <View style={[s.modalSheet, { maxHeight: '80%' }]}>
             <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>เลือกล็อก (ศูนย์อาหาร {selectedFC})</Text>
+            <Text style={s.modalTitle}>เลือกล็อค (ศูนย์อาหาร {selectedFC})</Text>
             
             <ScrollView style={{ marginTop: 8 }}>
               {stalls.filter(s => s.food_court_id === selectedFC).map((stall) => {
@@ -396,7 +396,7 @@ export default function MeterRecording() {
                   >
                     <View style={s.monthOptionLeft}>
                       <Text style={[s.monthOptionText, isSelected && s.monthOptionTextActive]}>
-                        ล็อก {stall.slot_number}
+                        ล็อค {stall.slot_number}
                       </Text>
                       <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 8 }}>
                         — {tenantName}
@@ -407,7 +407,7 @@ export default function MeterRecording() {
                 );
               })}
               {stalls.filter(s => s.food_court_id === selectedFC).length === 0 && (
-                <Text style={{ textAlign: 'center', color: '#9CA3AF', padding: 20 }}>ไม่มีล็อกที่มีผู้เช่าในศูนย์อาหารนี้</Text>
+                <Text style={{ textAlign: 'center', color: '#9CA3AF', padding: 20 }}>ไม่มีล็อคที่มีผู้เช่าในศูนย์อาหารนี้</Text>
               )}
             </ScrollView>
           </View>

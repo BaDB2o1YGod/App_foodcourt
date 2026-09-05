@@ -350,7 +350,7 @@ export default function ExecutiveRepairs() {
                {req.requested_at || req.created_at ? new Date(req.requested_at || req.created_at).toLocaleDateString('th-TH') : '-'}
             </Text>
             <Text style={styles.meta}>
-              👤 {req.tenant?.first_name || 'ผู้เช่า'} — ล็อก {req.slot?.slot_number || '-'}
+              👤 {req.tenant?.first_name || 'ผู้เช่า'} — ล็อค {req.slot?.slot_number || '-'}
             </Text>
           </View>
         ))

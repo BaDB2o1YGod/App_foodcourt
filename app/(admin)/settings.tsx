@@ -119,7 +119,7 @@ export default function AdminSettings() {
     setSavingSize(true);
     try {
       await stallsAPI.update(selectedStall.slot_id, { slot_size: stallSizeInput });
-      Alert.alert('สำเร็จ', 'อัปเดตขนาดล็อกเรียบร้อยแล้ว');
+      Alert.alert('สำเร็จ', 'อัปเดตขนาดล็อคเรียบร้อยแล้ว');
       setIsEditingSize(false);
       // update local
       const updatedStalls = allStalls.map(s => s.slot_id === selectedStall.slot_id ? { ...s, slot_size: stallSizeInput } : s);
@@ -246,7 +246,7 @@ export default function AdminSettings() {
 
         {/* Space Size Setting Card */}
         <View style={[styles.card, { marginTop: 12 }]}>
-          <Text style={styles.cardTitle}>ตั้งค่าขนาดล็อก</Text>
+          <Text style={styles.cardTitle}>ตั้งค่าขนาดล็อค</Text>
 
           <View style={styles.field}>
             <Text style={styles.label}>เลือกศูนย์อาหาร</Text>
@@ -260,10 +260,10 @@ export default function AdminSettings() {
 
           {selectedFoodCourt !== null && (
             <View style={styles.field}>
-              <Text style={styles.label}>เลือกล็อก</Text>
+              <Text style={styles.label}>เลือกล็อค</Text>
               <TouchableOpacity style={styles.selectBtn} onPress={() => setShowStallModal(true)}>
                 <Text style={selectedStall ? styles.selectValue : styles.selectPlaceholder}>
-                  {selectedStall ? `ล็อก ${selectedStall.slot_number}` : '-- เลือกล็อก --'}
+                  {selectedStall ? `ล็อค ${selectedStall.slot_number}` : '-- เลือกล็อค --'}
                 </Text>
                 <Text style={styles.selectCaret}>▼</Text>
               </TouchableOpacity>
@@ -272,7 +272,7 @@ export default function AdminSettings() {
 
           {selectedStall !== null && (
             <View style={styles.field}>
-              <Text style={styles.label}>ขนาดล็อก (ตร.ม.)</Text>
+              <Text style={styles.label}>ขนาดล็อค (ตร.ม.)</Text>
               <TextInput
                 style={[styles.input, !isEditingSize && styles.inputDisabled]}
                 value={stallSizeInput}
@@ -325,14 +325,14 @@ export default function AdminSettings() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowStallModal(false)}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>เลือกล็อก</Text>
+            <Text style={styles.modalTitle}>เลือกล็อค</Text>
             <ScrollView style={{ maxHeight: 300 }}>
               {availableStalls.length > 0 ? availableStalls.map(s => (
                 <TouchableOpacity key={s.slot_id} style={styles.modalOption} onPress={() => handleSelectStall(s)}>
-                  <Text style={styles.modalOptionText}>ล็อก {s.slot_number}</Text>
+                  <Text style={styles.modalOptionText}>ล็อค {s.slot_number}</Text>
                 </TouchableOpacity>
               )) : (
-                <View style={{ padding: 20, alignItems:'center' }}><Text style={{ color: '#9CA3AF' }}>ไม่มีล็อกในศูนย์นี้</Text></View>
+                <View style={{ padding: 20, alignItems:'center' }}><Text style={{ color: '#9CA3AF' }}>ไม่มีล็อคในศูนย์นี้</Text></View>
               )}
             </ScrollView>
           </View>

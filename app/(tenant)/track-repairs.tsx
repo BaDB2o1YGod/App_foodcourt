@@ -75,7 +75,7 @@ export default function TrackRepairs() {
                 <StatusBadge status={selectedJob?.status} />
               </View>
               {selectedJob?.category && <Text style={styles.meta}>🏷 {selectedJob.category}</Text>}
-              <Text style={styles.meta}>📍 ล็อก {selectedJob?.slot?.slot_number || '-'}</Text>
+              <Text style={styles.meta}>📍 ล็อค {selectedJob?.slot?.slot_number || '-'}</Text>
               <Text style={styles.meta}> แจ้งเมื่อ {selectedJob?.requested_at ? new Date(selectedJob.requested_at).toLocaleDateString('th-TH') : ''}</Text>
               {selectedJob?.description && <Text style={styles.modalDesc}>{selectedJob.description}</Text>}
             </View>
