@@ -257,7 +257,7 @@ export default function PaymentHistory() {
       <Modal visible={!!slipUri} transparent animationType="fade" onRequestClose={() => setSlipUri(null)}>
         <TouchableOpacity style={s.modalBg} activeOpacity={1} onPress={() => setSlipUri(null)}>
           <View style={s.modalBox}>
-            <Text style={s.modalTitle}>สลิปการโอนเงิน</Text>
+            <Text style={s.modalTitle}>หลักฐานการชำระเงิน</Text>
             {slipUri && <Image source={{ uri: slipUri }} style={s.slipImage} resizeMode="contain" />}
             <TouchableOpacity style={s.closeButton} onPress={() => setSlipUri(null)}>
               <Text style={s.closeButtonText}>ปิด</Text>

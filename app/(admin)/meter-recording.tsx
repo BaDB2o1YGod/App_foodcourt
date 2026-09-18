@@ -89,12 +89,25 @@ export default function MeterRecording() {
         const readings: any[] = res.data.data || [];
         const lastWater = readings.find(r => r.meter_type === 'WATER');
         const lastElectric = readings.find(r => r.meter_type === 'ELECTRICITY');
-        setPrevWater(lastWater ? lastWater.current_reading : null);
-        setPrevElectric(lastElectric ? lastElectric.current_reading : null);
+        const parseReading = (r: any): number | null => {
+          if (!r || r.current_reading === null || r.current_reading === undefined || r.current_reading === '') return null;
+          const num = parseFloat(r.current_reading);
+          return isNaN(num) ? null : num;
+        };
+        setPrevWater(parseReading(lastWater));
+        setPrevElectric(parseReading(lastElectric));
       })
       .catch(() => { setPrevWater(null); setPrevElectric(null); })
       .finally(() => setLoadingPrev(false));
   }, [selected?.slot_id]);
+
+  const waterVal = waterReading !== '' ? parseInt(waterReading, 10) : null;
+  const isWaterLower = waterVal !== null && prevWater !== null && waterVal < prevWater;
+
+  const electricVal = electricReading !== '' ? parseInt(electricReading, 10) : null;
+  const isElectricLower = electricVal !== null && prevElectric !== null && electricVal < prevElectric;
+
+  const hasValidationError = isWaterLower || isElectricLower;
 
   /* submit */
   const handleRecord = async () => {
@@ -102,6 +115,35 @@ export default function MeterRecording() {
     if (!waterReading && !electricReading) {
       Alert.alert('แจ้งเตือน', 'กรุณากรอกค่ามิเตอร์น้ำ หรือมิเตอร์ไฟ อย่างน้อยหนึ่งรายการ'); return;
     }
+
+    if (waterVal !== null) {
+      if (isNaN(waterVal) || waterVal < 0) {
+        Alert.alert('ข้อมูลไม่ถูกต้อง', 'กรุณากรอกเลขมิเตอร์น้ำให้ถูกต้อง');
+        return;
+      }
+      if (prevWater !== null && waterVal < prevWater) {
+        Alert.alert(
+          'ข้อมูลมิเตอร์ไม่ถูกต้อง',
+          `เลขมิเตอร์น้ำ (${waterVal.toLocaleString()}) ต้องไม่น้อยกว่ารอบก่อนหน้า (${Math.round(prevWater).toLocaleString()})\n\nกรุณาตรวจสอบและกรอกใหม่อีกครั้ง`
+        );
+        return;
+      }
+    }
+
+    if (electricVal !== null) {
+      if (isNaN(electricVal) || electricVal < 0) {
+        Alert.alert('ข้อมูลไม่ถูกต้อง', 'กรุณากรอกเลขมิเตอร์ไฟให้ถูกต้อง');
+        return;
+      }
+      if (prevElectric !== null && electricVal < prevElectric) {
+        Alert.alert(
+          'ข้อมูลมิเตอร์ไม่ถูกต้อง',
+          `เลขมิเตอร์ไฟ (${electricVal.toLocaleString()}) ต้องไม่น้อยกว่ารอบก่อนหน้า (${Math.round(prevElectric).toLocaleString()})\n\nกรุณาตรวจสอบและกรอกใหม่อีกครั้ง`
+        );
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       await stallsAPI.recordMeterReading(selected.slot_id, {
@@ -207,7 +249,7 @@ export default function MeterRecording() {
             )}
 
             <TextInput
-              style={s.meterInput}
+              style={[s.meterInput, isWaterLower && s.meterInputError]}
               placeholder="0000000  (7 หลัก)"
               placeholderTextColor="#9CA3AF"
               value={waterReading}
@@ -216,11 +258,20 @@ export default function MeterRecording() {
               maxLength={7}
             />
 
-            {waterReading && prevWater !== null && (
+            {isWaterLower && prevWater !== null && (
+              <View style={s.errorRow}>
+                <MaterialIcons name="error-outline" size={16} color="#DC2626" />
+                <Text style={s.errorText}>
+                  เลขมิเตอร์ต้องไม่น้อยกว่าครั้งก่อน ({Math.round(prevWater).toLocaleString()} ม³)
+                </Text>
+              </View>
+            )}
+
+            {!isWaterLower && waterReading.length > 0 && prevWater !== null && (
               <View style={s.usageRow}>
                 <Text style={s.usageLabel}>หน่วยที่ใช้ในรอบนี้</Text>
                 <Text style={s.usageVal}>
-                  {Math.max(0, parseInt(waterReading || '0') - prevWater).toLocaleString()} ม³
+                  {((waterVal || 0) - prevWater).toLocaleString()} ม³
                 </Text>
               </View>
             )}
@@ -259,7 +310,7 @@ export default function MeterRecording() {
             )}
 
             <TextInput
-              style={[s.meterInput, { borderColor: '#FDE68A' }]}
+              style={[s.meterInput, s.meterInputElectric, isElectricLower && s.meterInputError]}
               placeholder="00000  (5 หลัก)"
               placeholderTextColor="#9CA3AF"
               value={electricReading}
@@ -268,11 +319,20 @@ export default function MeterRecording() {
               maxLength={5}
             />
 
-            {electricReading && prevElectric !== null && (
+            {isElectricLower && prevElectric !== null && (
+              <View style={s.errorRow}>
+                <MaterialIcons name="error-outline" size={16} color="#DC2626" />
+                <Text style={s.errorText}>
+                  เลขมิเตอร์ต้องไม่น้อยกว่าครั้งก่อน ({Math.round(prevElectric).toLocaleString()} kWh)
+                </Text>
+              </View>
+            )}
+
+            {!isElectricLower && electricReading.length > 0 && prevElectric !== null && (
               <View style={[s.usageRow, s.usageRowElectric]}>
                 <Text style={[s.usageLabel, { color: '#92400E' }]}>หน่วยที่ใช้ในรอบนี้</Text>
                 <Text style={[s.usageVal, { color: '#78350F' }]}>
-                  {Math.max(0, parseInt(electricReading || '0') - prevElectric).toLocaleString()} kWh
+                  {((electricVal || 0) - prevElectric).toLocaleString()} kWh
                 </Text>
               </View>
             )}
@@ -281,15 +341,25 @@ export default function MeterRecording() {
 
         {/* ── Summary box ── */}
         {(waterReading || electricReading) && selected && (
-          <View style={s.summaryBox}>
-            <Text style={s.summaryTitle}>สรุปการบันทึก</Text>
+          <View style={[s.summaryBox, hasValidationError && s.summaryBoxError]}>
+            <Text style={[s.summaryTitle, hasValidationError && s.summaryTitleError]}>
+              {hasValidationError ? '⚠️ สรุปการบันทึก (มีข้อมูลไม่ถูกต้อง)' : 'สรุปการบันทึก'}
+            </Text>
             <Text style={s.summaryRow}>บิลเดือน: <Text style={s.summaryVal}>{billingMonth.label}</Text></Text>
             <Text style={s.summaryRow}>ล็อค: <Text style={s.summaryVal}>{selected.slot_number}</Text></Text>
             {waterReading && (
               <>
                 <Text style={s.summaryRow}>เลขมิเตอร์น้ำ: <Text style={s.summaryVal}>{String(waterReading).padStart(7, '0')}</Text></Text>
                 {prevWater !== null && (
-                  <Text style={s.summaryRow}>   ↳ ใช้ไป: <Text style={s.summaryVal}>{Math.max(0, parseInt(waterReading) - prevWater).toLocaleString()} ม³</Text></Text>
+                  isWaterLower ? (
+                    <Text style={[s.summaryRow, s.summaryRowError]}>
+                      {'   ↳ ❌ เลขมิเตอร์น้อยกว่ารอบก่อนหน้า ('}{Math.round(prevWater).toLocaleString()} ม³)
+                    </Text>
+                  ) : (
+                    <Text style={s.summaryRow}>
+                      {'   ↳ ใช้ไป: '}<Text style={s.summaryVal}>{((waterVal || 0) - prevWater).toLocaleString()} ม³</Text>
+                    </Text>
+                  )
                 )}
               </>
             )}
@@ -297,7 +367,15 @@ export default function MeterRecording() {
               <>
                 <Text style={s.summaryRow}>เลขมิเตอร์ไฟ: <Text style={s.summaryVal}>{String(electricReading).padStart(5, '0')}</Text></Text>
                 {prevElectric !== null && (
-                  <Text style={s.summaryRow}>   ↳ ใช้ไป: <Text style={s.summaryVal}>{Math.max(0, parseInt(electricReading) - prevElectric).toLocaleString()} kWh</Text></Text>
+                  isElectricLower ? (
+                    <Text style={[s.summaryRow, s.summaryRowError]}>
+                      {'   ↳ ❌ เลขมิเตอร์น้อยกว่ารอบก่อนหน้า ('}{Math.round(prevElectric).toLocaleString()} kWh)
+                    </Text>
+                  ) : (
+                    <Text style={s.summaryRow}>
+                      {'   ↳ ใช้ไป: '}<Text style={s.summaryVal}>{((electricVal || 0) - prevElectric).toLocaleString()} kWh</Text>
+                    </Text>
+                  )
                 )}
               </>
             )}
@@ -306,11 +384,17 @@ export default function MeterRecording() {
 
         {/* ── Submit ── */}
         <TouchableOpacity
-          style={[s.submitBtn, submitting && { opacity: 0.6 }]}
+          style={[s.submitBtn, (submitting || hasValidationError) && s.submitBtnDisabled]}
           onPress={handleRecord}
-          disabled={submitting}
+          disabled={submitting || hasValidationError}
         >
-          <Text style={s.submitText}>{submitting ? 'กำลังบันทึก...' : 'บันทึกมิเตอร์'}</Text>
+          <Text style={s.submitText}>
+            {submitting
+              ? 'กำลังบันทึก...'
+              : hasValidationError
+              ? '⚠️ กรุณาแก้ไขเลขมิเตอร์ที่น้อยกว่ารอบก่อน'
+              : 'บันทึกมิเตอร์'}
+          </Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -492,18 +576,29 @@ const s = StyleSheet.create({
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11,
     fontSize: 15, color: '#1F2937',
   },
+  meterInputElectric: { borderColor: '#FDE68A' },
+  meterInputError: { borderColor: '#DC2626', backgroundColor: '#FEF2F2' },
+  errorRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FEE2E2', borderRadius: 8, padding: 8, marginTop: 6,
+  },
+  errorText: { color: '#DC2626', fontSize: 12, fontWeight: '700', flex: 1 },
 
   /* summary */
   summaryBox: {
     backgroundColor: '#F0FDF4', borderRadius: 14, padding: 14,
     borderWidth: 1.5, borderColor: '#86EFAC', marginBottom: 14,
   },
+  summaryBoxError: { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
   summaryTitle: { fontSize: 13, fontWeight: '700', color: '#166534', marginBottom: 8 },
+  summaryTitleError: { color: '#DC2626' },
   summaryRow: { fontSize: 13, color: '#374151', marginBottom: 4 },
+  summaryRowError: { color: '#DC2626', fontWeight: '700' },
   summaryVal: { fontWeight: '700', color: '#1F2937' },
 
   /* submit */
   submitBtn: { backgroundColor: '#DC2626', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 4 },
+  submitBtnDisabled: { opacity: 0.5, backgroundColor: '#9CA3AF' },
   submitText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 
   /* modal */

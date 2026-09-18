@@ -95,7 +95,7 @@ export default function AdminBills() {
     try {
       await billsAPI.verifyPayment(paymentId, {
         approved,
-        notes: approved ? 'ยืนยันโดยแอดมิน' : 'ปฏิเสธโดยแอดมิน',
+        notes: approved ? 'ยืนยันโดยผู้ดูแลระบบ' : 'ปฏิเสธโดยผู้ดูแลระบบ',
       });
       Alert.alert('สำเร็จ', approved ? 'ยืนยันการชำระเงินเรียบร้อย' : 'ปฏิเสธหลักฐานการชำระเงินเรียบร้อย');
       setSelectedBill(null);
